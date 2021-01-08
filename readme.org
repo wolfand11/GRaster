@@ -1,0 +1,4 @@
+* README
+* 参考链接
+  - https://github.com/ssloy/tinyrenderer/wiki
+  - https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf
