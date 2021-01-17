@@ -15,7 +15,8 @@ public:
     };
 
 
-    template<typename... Targs> static void Log(GLogType logT, Targs... log)
+    template<typename... Targs>
+    static void Log(GLogType logT, Targs... logs)
     {
         std::string tag;
         switch (logT)
@@ -31,10 +32,7 @@ public:
             break;
         }
         std::cout << tag;
-        for(auto msg : {log...})
-        {
-            std::cout << std::to_string(msg);
-        }
+        LogTValue(logs...);
         std::cout << std::endl;
 
     }
@@ -53,8 +51,22 @@ public:
     {
         Log(GLogType::kError, log...);
     }
+
+private:
+    template<typename T>
+    static void LogTValue(T log)
+    {
+        std::cout << log;
+    }
+    template<typename T, typename... Targs>
+    static void LogTValue(T log, Targs ... logs)
+    {
+        LogTValue(log);
+        LogTValue(logs ...);
+    }
 };
 
+/*
 #define CHECK_FAIL_LOG_INFO(CONDITION, LOG_STR, ...) \
     (CONDITION) ? true : (GLog::LogInfo(LOG_STR, ##__VA_ARGS__), false);
 
@@ -63,6 +75,6 @@ public:
 
 #define CHECK_FAIL_LOG_ERROR(CONDITION, LOG_STR, ...) \
     (CONDITION) ? true : (GLog::LogError(LOG_STR, ##__VA_ARGS__), false);
-
+*/
 
 #endif // GLOG_H

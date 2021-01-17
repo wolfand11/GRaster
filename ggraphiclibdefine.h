@@ -1,0 +1,74 @@
+#ifndef GGRAPHICLIBDEFINE_H
+#define GGRAPHICLIBDEFINE_H
+
+enum GFrontFace
+{
+    kCounterClockwise,
+    kClockwise
+};
+
+enum GFaceType
+{
+    kFront,
+    kBack,
+    kFrontAndBack
+};
+
+enum GPrimitiveType
+{
+    kPoints,
+    kLines,
+    kTriangles,
+};
+
+enum GDatumType
+{
+    kFloat,
+    kDouble,
+    kInt,
+    kUInt,
+    kChar,
+    kUChar
+};
+
+enum GPolygonMode
+{
+    kPMPoint,
+    kPMLine,
+    kPMFill,
+};
+
+enum GRenderBufferType
+{
+    kRBNon=-1,
+    kRBFront,
+    kRBBack,
+    //kFrontAndBack,
+    kRBColorAttachment0,
+    kRBColorAttachment1,
+    kRBColorAttachment2,
+    kRBColorAttachment3,
+    kRBColorAttachment4,
+    kRBMax,
+};
+
+enum GDataBufferType
+{
+    kArrayBuffer,
+    kElementArrayBuffer,
+    kPixelPackBuffer,
+    kPixelUnpackBuffer,
+    kTextureBuffer,
+    kTransformFeedbackBuffer,
+    kUniformBuffer,
+};
+
+
+
+
+
+
+
+
+
+#endif // GGRAPHICLIBDEFINE_H

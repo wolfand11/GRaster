@@ -10,6 +10,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = GRaster
 TEMPLATE = app
+CONFIG += console c++14
+QMAKE_CXXFLAGS += -ftemplate-backtrace-limit=0
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -25,19 +27,34 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         gbuffer.cpp \
+        ggameobject.cpp \
         ggraphiclibapi.cpp \
+        gmath.cpp \
         gmathutils.cpp \
-        grasterapi.cpp \
+        gmodel.cpp \
+        grastergpupipeline.cpp \
+        gshader.cpp \
+        gutils.cpp \
         main.cpp \
-        graster.cpp
+        graster.cpp \
+        tgaimage.cpp
 
 HEADERS += \
         gbuffer.h \
+        ggameobject.h \
         ggraphiclibapi.h \
+        ggraphiclibdefine.h \
         glog.h \
+        gmath.h \
         gmathutils.h \
+        gmodel.h \
         graster.h \
-        grasterapi.h
+        grastergpupipeline.h \
+        gshader.h \
+        gutils.h \
+        tgaimage.h
 
 FORMS += \
         graster.ui
+
+RESOURCES +=

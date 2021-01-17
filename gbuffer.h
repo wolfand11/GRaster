@@ -3,8 +3,12 @@
 
 #include "glog.h"
 #include <vector>
+#include <tuple>
+#include <functional>
+#include "ggraphiclibdefine.h"
 class GRenderBuffer;
 class GColorBuffer;
+class GDepthStencilBuffer;
 
 struct GColor
 {
@@ -28,24 +32,12 @@ struct GColor
 class GRenderBuffer
 {
 public:
-    enum GRenderBufferType
-    {
-        kNon=-1,
-        kFront,
-        kBack,
-        kFrontAndBack,
-        kColorAttachment0,
-        kColorAttachment1,
-        kColorAttachment2,
-        kColorAttachment3,
-        kColorAttachment4,
-        kMax,
-    };
+    virtual ~GRenderBuffer(){}
     bool CheckRangeValid(int x, int y)
     {
         if(data == nullptr)
         {
-            GLog::LogError("buffer is nullptr!");
+            GLog::LogError("buffer is nullptr! buffer type = ",typeid(*this).name());
             return false;
         }
         if(x<0 || y<0 || x>=width || y>=height)
@@ -67,22 +59,31 @@ class GFrameBuffer
 {
 public:
     GFrameBuffer() {}
-    static const int MAX_COLORBUFF_COUNT = GRenderBuffer::GRenderBufferType::kMax;
+    static const int MAX_COLORBUFF_COUNT = GRenderBufferType::kRBMax;
     static bool CheckAttachIndexValid(int index);
 
     void AttachRenderBuffer(GColorBuffer* colorbuffer, int index);
     void ClearRenderBuffer(int index, GColor clearColor);
+    void ClearRenderBuffer(int clearValue, bool isDepthBuffer=true);
+    void DrawRenderBuffer(std::initializer_list<GRenderBufferType> renderBufferTypes);
+    std::vector<GRenderBufferType> drawRenderBufferTypes;
+    GColorBuffer* GetRenderBufer(GRenderBufferType renderBufferType);
+    void GetDrawRenderBuffer(std::vector<GColorBuffer*>& drawRenderBuffers);
 private:
     GColorBuffer* colorBuffer[MAX_COLORBUFF_COUNT];
-    GRenderBuffer* depthBuffer;
-    GRenderBuffer* stencilBuffer;
+    GDepthStencilBuffer* depthBuffer;
+    GDepthStencilBuffer* stencilBuffer;
 };
 
-class GColorBuffer : GRenderBuffer
+#define BUFFER_ZERO_COORD_AT_LEFT_BOTTOM \
+    y = height - y - 1; \
+
+class GColorBuffer : public GRenderBuffer
 {
 public:
     GColorBuffer(int w, int h)
     {
+        GLog::LogInfo("Create Color Buffer w = ",w," h = ", h);
         data = nullptr;
         if(w>0 && h>0)
         {
@@ -95,11 +96,11 @@ public:
             GLog::LogError("w = ", w, " h = ", h);
         }
     }
-    ~GColorBuffer()
+    virtual ~GColorBuffer()
     {
         if(data!=nullptr)
         {
-            delete data;
+            delete colorData();
         }
         data = nullptr;
     }
@@ -118,24 +119,31 @@ public:
     void SetColor(int x, int y, GColor color)
     {
         if(!CheckRangeValid(x,y)) return;
-
-        data[y*width+x] = color;
+        BUFFER_ZERO_COORD_AT_LEFT_BOTTOM;
+        colorData()[y*width+x] = color;
     }
 
     GColor GetColor(int x, int y)
     {
         if(!CheckRangeValid(x,y)) return GColor::black;
+        return colorData()[y*width+x];
+    }
 
-        return data[y*width+x];
+    unsigned char* GetData()
+    {
+        return (unsigned char*)data;
     }
 private:
-    GColor* data;
+    GColor* colorData()
+    {
+        return (GColor*)data;
+    }
 };
 
-class GDepthBuffer : GRenderBuffer
+class GDepthStencilBuffer : public GRenderBuffer
 {
 public:
-    GDepthBuffer(int w, int h)
+    GDepthStencilBuffer(int w, int h)
     {
         data = nullptr;
         if(w>0 && h>0)
@@ -149,11 +157,11 @@ public:
             GLog::LogError("w = ", w, " h = ", h);
         }
     }
-    ~GDepthBuffer()
+    virtual ~GDepthStencilBuffer()
     {
         if(data!=nullptr)
         {
-            delete data;
+            delete depthStencilData();
         }
         data = nullptr;
     }
@@ -162,39 +170,32 @@ public:
         for(int i=0; i<width; i++)
         {
             for(int j=0; j<height; j++)
-            SetDepth(i, j, depth);
+            SetValue(i, j, depth);
         }
     }
-    void SetDepth(int x, int y, int depth)
+    void SetValue(int x, int y, int depth)
     {
         if(!CheckRangeValid(x,y)) return;
 
-        data[y*width+x] = depth;
+        BUFFER_ZERO_COORD_AT_LEFT_BOTTOM;
+        depthStencilData()[y*width+x] = depth;
     }
 
-    int GetDepth(int x, int y)
+    int GetValue(int x, int y)
     {
         if(!CheckRangeValid(x,y)) return 1;
-        return data[y*width+x];
+        return depthStencilData()[y*width+x];
     }
 private:
-    int* data;
+    int* depthStencilData()
+    {
+        return (int*)data;
+    }
 };
 
 class GDataBuffer
 {
 public:
-    enum GDataBufferType
-    {
-        kArrayBuffer,
-        kElementArrayBuffer,
-        kPixelPackBuffer,
-        kPixelUnpackBuffer,
-        kTextureBuffer,
-        kTransformFeedbackBuffer,
-        kUniformBuffer,
-    };
-
     GDataBuffer(GDataBufferType t)
     {
         bufferType = t;
@@ -205,54 +206,75 @@ public:
         InvalidateData();
     }
 
-    void SetData(void* data, int size)
+    void SetData(void* data, int size, int offset=0)
     {
         if(data==nullptr || size<1)
         {
             GLog::LogError("data = ", data, " size = ", size);
             return;
         }
-
-        if(buffer!=nullptr)
-        {
-            delete[] buffer;
-        }
-        buffer = nullptr;
-
-        buffer = new unsigned char[size]();
-        memcpy(buffer, data, size);
+        unsigned char* start = (unsigned char*)data;
+        _buffer.insert(_buffer.begin()+offset, start, start+size);
     }
 
     void InvalidateData()
     {
-        if(buffer!=nullptr)
-        {
-            delete[] buffer;
-        }
-        buffer = nullptr;
+        _buffer.clear();
+    }
+
+    template<typename T>T* GetData(int offset)
+    {
+        return (T*)(_buffer.data()+offset);
+    }
+
+    void* buffer()
+    {
+        return _buffer.data();
     }
 
     GDataBufferType bufferType;
-    int datumType;
-    unsigned char* buffer;
+    std::vector<unsigned char> _buffer;
+};
+
+struct GVertexAttribInfo
+{
+    int slot;
+    bool enable;
+    int datumCount;
+    GDatumType datumType;
+    bool normalize;
+    int stride;
+    int offset;
+};
+
+class GVertexAttribInfoObject;
+struct GVertexAttrib
+{
+    int datumCount;
+    GDatumType datumType;
+    double data[4];
+
+    typedef std::vector<GVertexAttrib> VertexAttribArr;
+    typedef std::tuple<GVertexAttribInfo, VertexAttribArr> AttriInfo_AttribArr;
+    typedef std::vector<AttriInfo_AttribArr> AttriInfo_AttribArr_Arr;
+
+    static void InitArr_Arr(AttriInfo_AttribArr_Arr& slotAtrribArr_Arr, GVertexAttribInfoObject* vao);
+    static void AppendAttribToArr_Arr(AttriInfo_AttribArr_Arr& slotAtrribArr_Arr, int slot, GVertexAttrib& attrib);
 };
 
 class GVertexAttribInfoObject
 {
 public:
-    static const int MAX_VERTEX_ATTRIB_COUNT = 10;
-    struct VertexAttribInfo
+    bool IsSlotExist(int slot);
+    GVertexAttribInfo* GetVertexAttriInfo(int slot);
+    int slotCount()
     {
-        bool enable;
-        int datumCount;
-        int datumType;
-        bool normalize;
-        int stride;
-        int offset;
-    };
+        return vertexAttribInfoArray.size();
+    }
 
-    VertexAttribInfo vertexAttribInfoArray[MAX_VERTEX_ATTRIB_COUNT];
+    std::vector<GVertexAttribInfo> vertexAttribInfoArray;
     GDataBuffer* vertexBuffer;
+    GDataBuffer* elemBuffer;
 };
 
 #endif // GBUFFER_H
