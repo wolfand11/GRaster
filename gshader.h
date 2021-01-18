@@ -69,11 +69,27 @@ struct S_appdata : public S_abs_appdata
     GMath::vec3 normal;
 };
 
-struct v2f
+struct S_abs_v2f
 {
     GMath::vec4 gl_position;
+
+    GMath::vec4 ndc()
+    {
+        return gl_position / gl_position[3];
+    }
+};
+
+struct S_v2f : public S_abs_v2f
+{
+    virtual ~S_v2f(){}
+
     GMath::vec2 uv;
     GMath::vec3 normal;
+};
+
+struct S_fout
+{
+    std::vector<GMath::vec4> colors;
 };
 
 class GGraphicLibAPI;
@@ -83,7 +99,9 @@ struct IShader
 
     virtual ~IShader(){}
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx) = 0;
-    virtual bool fragment(void* frag_in) = 0;
+    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out) = 0;
+    virtual S_abs_v2f* GetV2f(int idx) = 0;
+    virtual S_abs_v2f& interpolation(GGraphicLibAPI* GLAPI, GMath::vec3 lerpFactor) = 0;
 
     S_abs_appdata* CreateAppData()
     {
@@ -96,6 +114,7 @@ struct IShader
     }
 
     GShaderAppDataType appdataType;
+    bool useEarlyPerFragementTest;
 };
 
 enum GShaderType
@@ -105,7 +124,10 @@ enum GShaderType
 
 struct GShader : public IShader
 {
-    GShader():IShader(GShaderAppDataType::kSADTDefault) {  }
+    GShader():IShader(GShaderAppDataType::kSADTDefault)
+    {
+        useEarlyPerFragementTest = true;
+    }
 
     // uniform attribute
     GMath::mat4f obj2World;
@@ -114,14 +136,17 @@ struct GShader : public IShader
     GMath::mat4f invertProjMat;
     GMath::vec3 l;
 
-    v2f v2f_data_arr[3];
+    S_abs_v2f* GetV2f(int idx)
+    {
+        return &(v2f_data_arr[idx]);
+    }
+    S_v2f v2f_data_arr[3];
+    S_v2f v2f_interpolated;
 
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx);
+    virtual S_abs_v2f& interpolation(GGraphicLibAPI* GLAPI, GMath::vec3 lerpFactor);
 
-
-    virtual bool fragment(void* frag_in)
-    {
-    }
+    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out);
 };
 
 #endif // GSHADER_H

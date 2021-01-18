@@ -38,8 +38,8 @@ public:
 
     // Enable Disable Capability
     void SetEnableCullFace(bool enable=true);
-    void SetEnableBlend(int renderBufferIndex, bool enable=true);
-    void SetScissorTest(int renderBufferIndex, bool enable=true);
+    void SetEnableBlend(GRenderBufferType renderBufferType, bool enable=true);
+    void SetScissorTest(GRenderBufferType renderBufferType, bool enable=true);
 
     // Data Buffer
     GDataBuffer* GenDataBuffer(GDataBufferType bufferType);
@@ -57,7 +57,7 @@ public:
     // Draw
     bool CheckDrawValid(GPrimitiveType t, int vertexCount);
     void DrawArrays(GPrimitiveType t, int vertexOffsetCount, int vertexCount);
-    void DrawElements(GPrimitiveType t, int count, GDatumType indexType, int offsetBytes);
+    void DrawElements(GPrimitiveType t, int vertCount, GDatumType indexType, int offsetBytes);
     void DrawElementsBaseVertex(GPrimitiveType t, int count, GDatumType indexType, int offsetBytes, int baseVertex);
     void SetPolygonMode(GPolygonMode mode);
 
@@ -75,8 +75,6 @@ public:
     GFrontFace currentFrontFace;
     GFaceType cullFaceType;
     bool enableCullFace;
-    bool enableBlend[GFrameBuffer::MAX_COLORBUFF_COUNT];
-    bool enableScissorTest[GFrameBuffer::MAX_COLORBUFF_COUNT];
 
     GVertexAttribInfoObject* activeVertexAttriInfoObject;
     GShader* activeShader;

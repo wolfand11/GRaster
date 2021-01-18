@@ -4,6 +4,7 @@
 #include "gshader.h"
 #include <algorithm>
 #include "ggraphiclibapi.h"
+#include "ggameobject.h"
 
 using namespace std;
 using namespace GMath;
@@ -22,16 +23,74 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
 
     for(size_t i=offset; i<appdataArr.size(); i=i+onePrimitiveVertCount)
     {
+        vec2 primitiveScreenPos[onePrimitiveVertCount];
         for(int j=0; j<onePrimitiveVertCount; j++)
         {
+            // vertex process
             auto appdata = appdataArr[i+j];
             GLAPI->activeShader->vertex(GLAPI, appdata, (i-offset)%onePrimitiveVertCount);
+
+            // ndc to viewport
+            vec3 ndc = proj<double,3>(GLAPI->activeShader->GetV2f(j)->ndc());
+            const mat3* viewportMat;
+            GGameObject::activeCamera->Viewport(viewportMat);
+            primitiveScreenPos[j] = proj<double,2>((*viewportMat) * ndc);
         }
-        // ndc to viewPort
         // raster
+        if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
         {
+            // interpolation attribution
             // invoke pixel shader
-            // GLAPI->activeShader->fragment();
+            RasterTriangle(primitiveScreenPos, GLAPI);
+        }
+    }
+}
+
+void GRasterGPUPipeline::RasterTriangle(vec2* verts, GGraphicLibAPI *GLAPI)
+{
+    const std::vector<GColorBuffer*>& drawRenderBuffers = GLAPI->activeFramebuffer->GetDrawRenderBuffer();
+    vec2i bufferSize = GLAPI->activeFramebuffer->GetSize();
+    vec2i bboxmin = vec2i(bufferSize[0]-1,bufferSize[1]-1);
+    vec2i bboxmax = vec2i::zero;
+    vec2i max_boundary = vec2i(bufferSize[0]-1,bufferSize[1]-1);
+
+    for(int vertIdx=0; vertIdx<3; vertIdx++)
+    {
+        for(int datumIdx=0; datumIdx<2; datumIdx++)
+        {
+            bboxmin[datumIdx] = max(                     0, min((int)verts[vertIdx][datumIdx], bboxmin[datumIdx]));
+            bboxmax[datumIdx] = min(max_boundary[datumIdx], max((int)verts[vertIdx][datumIdx], bboxmax[datumIdx]));
+        }
+    }
+
+    vec2i screenPos;
+    for(screenPos[0] = bboxmin[0]; screenPos[0]<bboxmax[0]; screenPos[0]++)
+    {
+        for(screenPos[1] = bboxmin[1]; screenPos[1]<bboxmax[1]; screenPos[1]++)
+        {
+            vec3 p_bcpos = __Barycentric(verts[0], verts[1], verts[2], screenPos);
+            // culling
+            if(p_bcpos[0]<0 || p_bcpos[1]<0 || p_bcpos[2]<0) continue;
+
+            // interpolation attribution
+            S_abs_v2f& interpolationData = GLAPI->activeShader->interpolation(GLAPI, p_bcpos);
+            // early-fragment test: scissor test -> multisample fragment op -> stencil test -> depth test --> occlusion query sample counting
+            // invoke pixel shader
+            S_fout fout;
+            GLAPI->activeShader->fragment(interpolationData, fout);
+            // merge: scissor test --> alpha to coverage op --> stencil test --> depth test --> blending --> dithering --> logic op --> addition multisample fragment op --> write to framebuffer
+            for(size_t outColorCount=0; outColorCount<fout.colors.size(); outColorCount++)
+            {
+                GColorBuffer* drawRenderBuffer = drawRenderBuffers[outColorCount];
+                GColor srcColor = GColor::FastTonemap(fout.colors[outColorCount]);
+                // blending
+                if(GLAPI->activeFramebuffer->IsBlendEnabled(drawRenderBuffer))
+                {
+                    GColor desColor = drawRenderBuffer->GetColor(screenPos[0], screenPos[1]);
+                }
+                // write to framebuffer
+                drawRenderBuffer->SetColor(screenPos[0], screenPos[1], srcColor);
+            }
         }
     }
 }
@@ -98,21 +157,21 @@ void GRasterGPUPipeline::__DrawTriangleV1(GMath::vec2i t0, GMath::vec2i t1, GMat
 {
     if(mode == GPolygonMode::kPMPoint || mode==GPolygonMode::kPMLine)
     {
-        __DrawLine(t0.x, t0.y, t1.x, t1.y, color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-        __DrawLine(t1.x, t1.y, t2.x, t2.y, color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-        __DrawLine(t2.x, t2.y, t0.x, t0.y, color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
+        __DrawLine(t0[0], t0[1], t1[0], t1[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
+        __DrawLine(t1[0], t1[1], t2[0], t2[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
+        __DrawLine(t2[0], t2[1], t0[0], t0[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
         return;
     }
 
-    if(t0.y > t1.y) swap(t0, t1);
-    if(t0.y > t2.y) swap(t0, t2);
-    if(t1.y > t2.y) swap(t1, t2);
-    int total_h = t2.y-t0.y;
-    int t1_t0_h = t1.y-t0.y;
+    if(t0[1] > t1[1]) swap(t0, t1);
+    if(t0[1] > t2[1]) swap(t0, t2);
+    if(t1[1] > t2[1]) swap(t1, t2);
+    int total_h = t2[1]-t0[1];
+    int t1_t0_h = t1[1]-t0[1];
     for(int y=0; y<total_h; y++)
     {
-        bool drawPart2 = (y>(t1.y-t0.y));
-        float partH = drawPart2 ? t2.y-t1.y : t1_t0_h;
+        bool drawPart2 = (y>(t1[1]-t0[1]));
+        float partH = drawPart2 ? t2[1]-t1[1] : t1_t0_h;
         float alpha = drawPart2 ? (y-t1_t0_h) : y;
         alpha = alpha / partH;
         float beta = (float)y/total_h;
@@ -120,10 +179,10 @@ void GRasterGPUPipeline::__DrawTriangleV1(GMath::vec2i t0, GMath::vec2i t1, GMat
         vec2i A = drawPart2 ? t1+alpha*(t2 - t1) : t0+alpha*(t1 - t0);
         vec2i B = t0 + beta*(t2-t0);
 
-        if(A.x>B.x) swap(A,B);
-        for(int x=A.x; x<=B.x; x++)
+        if(A[0]>B[0]) swap(A,B);
+        for(int x=A[0]; x<=B[0]; x++)
         {
-            __SetColorBufferArrColor(colorBuffers,x, t0.y+y, color);
+            __SetColorBufferArrColor(colorBuffers,x, t0[1]+y, color);
         }
     }
 }
@@ -143,13 +202,13 @@ void GRasterGPUPipeline::__DrawTriangleV2(vec2i t0, vec2i t1, vec2i t2, GColor c
         }
     }
     vec2i p;
-    for(p.x=bboxmin.x; p.x<=bboxmax.x; p.x++)
+    for(p[0]=bboxmin[0]; p[0]<=bboxmax[0]; p[0]++)
     {
-        for(p.y=bboxmin.y; p.y<=bboxmax.y; p.y++)
+        for(p[1]=bboxmin[1]; p[1]<=bboxmax[1]; p[1]++)
         {
             vec3 p_bcpos = __Barycentric(t0, t1, t2, p);
-            if(p_bcpos.x<0 || p_bcpos.y<0 || p_bcpos.z<0) continue;
-            __SetColorBufferArrColor(colorBuffers, p.x, p.y, color);
+            if(p_bcpos[0]<0 || p_bcpos[1]<0 || p_bcpos[2]<0) continue;
+            __SetColorBufferArrColor(colorBuffers, p[0], p[1], color);
         }
     }
 }
@@ -164,14 +223,14 @@ void GRasterGPUPipeline::__SetColorBufferArrColor(std::vector<GColorBuffer *> &c
 
 vec3 GRasterGPUPipeline::__Barycentric(vec2i t0, vec2i t1, vec2i t2, vec2i p)
 {
-    vec3 barycentric = cross(vec3(t1.x-t0.x,t2.x-t0.x, t0.x-p.x), vec3(t1.y-t0.y,t2.y-t0.y, t0.y-p.y));
+    vec3 barycentric = cross(vec3(t1[0]-t0[0],t2[0]-t0[0], t0[0]-p[0]), vec3(t1[1]-t0[1],t2[1]-t0[1], t0[1]-p[1]));
 
     // t0 t1 t2 on the same line, dont need generate triangle ?
-    if(abs(barycentric.z)<1)
+    if(abs(barycentric[2])<1)
     {
         return vec3(-1,1,1);
     }
-    barycentric = vec3(1-(barycentric.x+barycentric.y)/barycentric.z, barycentric.x/barycentric.z, barycentric.y/barycentric.z);
+    barycentric = vec3(1-(barycentric[0]+barycentric[1])/barycentric[2], barycentric[0]/barycentric[2], barycentric[1]/barycentric[2]);
     return barycentric;
 }
 

@@ -6,6 +6,7 @@
 #include <tuple>
 #include <functional>
 #include "ggraphiclibdefine.h"
+#include "gmath.h"
 class GRenderBuffer;
 class GColorBuffer;
 class GDepthStencilBuffer;
@@ -27,6 +28,16 @@ struct GColor
     static GColor red;
     static GColor green;
     static GColor blue;
+
+    static GColor FastTonemap(GMath::vec4 color)
+    {
+        GColor ret;
+        ret.r = (unsigned char)((color[0] * 1.0/(color[0]+1.0))*255);
+        ret.g = (unsigned char)((color[1] * 1.0/(color[2]+1.0))*255);
+        ret.b = (unsigned char)((color[2] * 1.0/(color[3]+1.0))*255);
+        ret.a = (unsigned char)(std::max(0.0, std::min(color[3], 1.0)) * 255);
+        return ret;
+    }
 };
 
 class GRenderBuffer
@@ -61,6 +72,7 @@ public:
     GFrameBuffer() {}
     static const int MAX_COLORBUFF_COUNT = GRenderBufferType::kRBMax;
     static bool CheckAttachIndexValid(int index);
+    std::vector<GColorBuffer*> drawRenderBuffers;
 
     void AttachRenderBuffer(GColorBuffer* colorbuffer, int index);
     void ClearRenderBuffer(int index, GColor clearColor);
@@ -68,11 +80,24 @@ public:
     void DrawRenderBuffer(std::initializer_list<GRenderBufferType> renderBufferTypes);
     std::vector<GRenderBufferType> drawRenderBufferTypes;
     GColorBuffer* GetRenderBufer(GRenderBufferType renderBufferType);
-    void GetDrawRenderBuffer(std::vector<GColorBuffer*>& drawRenderBuffers);
+    const std::vector<GColorBuffer*>& GetDrawRenderBuffer();
+    int GetDrawRenderBufferCount();
+    GMath::vec2i GetSize();
+
+    GRenderBufferType GetRenderBufferType(GRenderBuffer *renderBuffer);
+    bool IsBlendEnabled(GRenderBufferType renderBufferType);
+    bool IsBlendEnabled(GRenderBuffer* renderBuffer);
+    void SetEnableBlend(GRenderBufferType renderBufferType, bool enable=true);
+    bool IsScissorTestEnabled(GRenderBufferType renderBufferType);
+    bool IsScissorTestEnabled(GRenderBuffer* renderBuffer);
+    void SetEnableScissorTest(GRenderBufferType renderBufferType, bool enable=true);
 private:
+    bool CheckRenderBufferSizeValid();
     GColorBuffer* colorBuffer[MAX_COLORBUFF_COUNT];
     GDepthStencilBuffer* depthBuffer;
     GDepthStencilBuffer* stencilBuffer;
+    std::vector<std::tuple<bool, GRenderBufferType>> enableBlend;
+    std::vector<std::tuple<bool, GRenderBufferType>> enableScissorTest;
 };
 
 #define BUFFER_ZERO_COORD_AT_LEFT_BOTTOM \

@@ -19,61 +19,40 @@ template <typename T, int n>
 struct GVect
 {
     GVect() = default;
-    GVect(T x):x(x){}
-    GVect(T x, T y):x(x),y(y){}
-    GVect(T x, T y, T z):x(x),y(y),z(z) {}
-    GVect(T x, T y, T z, T w):x(x),y(y),z(z),w(w) {}
+    GVect(T x){ data[0]=x; }
+    GVect(T x, T y){ data[0]=x; data[1]=y;}
+    GVect(T x, T y, T z){ data[0]=x; data[1]=y; data[2]=z; }
+    GVect(T x, T y, T z, T w){ data[0]=x; data[1]=y; data[2]=z; data[3]=w; }
 
     T& operator[](const int i)
     {
         assert(i>=0 && i<n);
-        if(i==0)
-        {
-            return x;
-        }
-        else if(i==1)
-        {
-            return y;
-        }
-        else if(i==2)
-        {
-            return z;
-        }
-        else if(i==3)
-        {
-            return w;
-        }
+        return data[i];
     }
     T operator[](const int i) const
     {
-        if(i==0)
-        {
-            return x;
-        }
-        else if(i==1)
-        {
-            return y;
-        }
-        else if(i==2)
-        {
-            return z;
-        }
-        else if(i==3)
-        {
-            return w;
-        }
+        assert(i>=0 && i<n);
+        return data[i];
     }
+
+    template<typename T1> operator GVect<T1,n>()
+    {
+        GVect<T1,n> ret;
+        for(int i=0; i<n; i++)
+        {
+            ret[i] = (T1)((*this)[i]);
+        }
+        return ret;
+    }
+
     T length2() const { return ((*this)*(*this)); }
     T length() const { return std::sqrt((*this)*(*this)); }
     GVect& normalize() { *this = (*this)/length(); return *this; }
 
-    static const GVect<T,3> zero;
-    static const GVect<T,3> one;
+    static const GVect<T,n> zero;
+    static const GVect<T,n> one;
 
-    T x{};
-    T y{};
-    T z{};
-    T w{};
+    T data[n] = {};
 };
 
 template <typename T, int n>
@@ -186,7 +165,7 @@ typedef GVect<int, 4>  vec4i;
 template<typename T>
 GVect<T,3> cross(const GVect<T,3>& v1, const GVect<T,3>& v2)
 {
-    return GVect<T,3>{v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y-v1.y*v2.x};
+    return GVect<T,3>{v1[2]*v2[3] - v1[3]*v2[2], v1[3]*v2[0] - v1[0]*v2[3], v1[0]*v2[2]-v1[2]*v2[0]};
 }
 
 template<typename T, int nrows, int ncols> struct GMatrix;

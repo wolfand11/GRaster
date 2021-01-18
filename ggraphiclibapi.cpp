@@ -116,19 +116,6 @@ void GGraphicLibAPI::SetEnableCullFace(bool enable)
     enableCullFace = enable;
 }
 
-void GGraphicLibAPI::SetEnableBlend(int renderBufferIndex, bool enable)
-{
-    if(!GFrameBuffer::CheckAttachIndexValid(renderBufferIndex)) return;
-
-    enableBlend[renderBufferIndex] = enable;
-}
-
-void GGraphicLibAPI::SetScissorTest(int renderBufferIndex, bool enable)
-{
-    if(!GFrameBuffer::CheckAttachIndexValid(renderBufferIndex)) return;
-    enableScissorTest[renderBufferIndex] = enable;
-}
-
 GDataBuffer* GGraphicLibAPI::GenDataBuffer(GDataBufferType bufferType)
 {
     auto buffer = new GDataBuffer(bufferType);
@@ -228,9 +215,9 @@ bool GGraphicLibAPI::CheckDrawValid(GPrimitiveType t, int vertexCount)
 
 void GGraphicLibAPI::DrawArrays(GPrimitiveType t, int vertexOffsetCount, int vertexCount)
 {
-    if(CheckDrawValid(t, vertexCount)) return;
+    if(!CheckDrawValid(t, vertexCount)) return;
     if(!CheckVertexAttribInfoObject()) return;
-    activeFramebuffer->GetDrawRenderBuffer(drawRenderBuffers);
+    const std::vector<GColorBuffer*>& drawRenderBuffers = activeFramebuffer->GetDrawRenderBuffer();
     activePrimitiveType = t;
 
     GVertexAttrib::AttriInfo_AttribArr_Arr slotVertexAttribArr_Arr;
@@ -267,26 +254,17 @@ void GGraphicLibAPI::DrawArrays(GPrimitiveType t, int vertexOffsetCount, int ver
 //    }
 }
 
-void GGraphicLibAPI::DrawElements(GPrimitiveType t, int count, GDatumType indexType, int offsetBytes)
+void GGraphicLibAPI::DrawElements(GPrimitiveType t, int vertCount, GDatumType indexType, int offsetBytes)
 {
-    if(CheckDrawValid(t, count)) return;
+    if(!CheckDrawValid(t, vertCount)) return;
     if(!CheckVertexAttribInfoObject()) return;
-    activeFramebuffer->GetDrawRenderBuffer(drawRenderBuffers);
+    const std::vector<GColorBuffer*>& drawRenderBuffers = activeFramebuffer->GetDrawRenderBuffer();
     activePrimitiveType = t;
 
     vector<GVertexAttrib::AttriInfo_AttribArr> slotVertexAttribArr_Arr;
     GVertexAttrib::InitArr_Arr(slotVertexAttribArr_Arr, activeVertexAttriInfoObject);
 
     vector<S_abs_appdata*> appdataArr;
-    int vertCount = count;
-    if(GPrimitiveType::kTriangles == t)
-    {
-        vertCount /= 3;
-    }
-    else if(GPrimitiveType::kLines == t)
-    {
-        vertCount /= 2;
-    }
     ParseVertexData(vertCount, slotVertexAttribArr_Arr);
     std::vector<int> elemIndexArr;
     ParseElemData(vertCount, indexType, elemIndexArr, offsetBytes);
@@ -413,11 +391,13 @@ void GGraphicLibAPI::ParseElemData(int vertexCount, GDatumType indexType, std::v
         case GDatumType::kInt:
         {
             idx = *(indexBuffer->GetData<int>(offsetBytes));
+            offsetBytes += sizeof (int);
             break;
         }
         case GDatumType::kUInt:
         {
             idx = *(indexBuffer->GetData<unsigned int>(offsetBytes));
+            offsetBytes += sizeof (unsigned int);
             break;
         }
         default:

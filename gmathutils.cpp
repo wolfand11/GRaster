@@ -14,9 +14,9 @@ GMath::mat4 GMathUtils::LookAt(GMath::vec3 eyePos, GMath::vec3 lookAtPoint, GMat
 {
     mat4 ret;
     ret.identity();
-    ret[0][3] = eyePos.x;
-    ret[1][3] = eyePos.y;
-    ret[2][3] = eyePos.z;
+    ret[0][3] = eyePos[0];
+    ret[1][3] = eyePos[2];
+    ret[2][3] = eyePos[3];
 
     vec3 forward = (lookAtPoint - eyePos).normalize();
     vec3 right = cross(up, forward).normalize();
@@ -83,9 +83,9 @@ void GMathUtils::DecomposeMatrix(const mat4f& mat, vec3f &translate, vec3f &rota
     translate[2] = mat.rows[2][3];
 
     rotation = RotationMatrixToEulerAngle(_rot);
-    scale.x = _scale[0][0];
-    scale.y = _scale[1][1];
-    scale.z = _scale[2][2];
+    scale[0] = _scale[0][0];
+    scale[1] = _scale[1][1];
+    scale[2] = _scale[2][2];
 }
 
 vec3f GMathUtils::RotationMatrixToEulerAngle(mat4f matrix)
@@ -94,26 +94,26 @@ vec3f GMathUtils::RotationMatrixToEulerAngle(mat4f matrix)
     float sp = -matrix.rows[3][2];
     if(sp<=-1.0f)
     {
-        eulerAngle.x = -M_PI / 2.0f;
+        eulerAngle[0] = -M_PI / 2.0f;
     }
     else if(sp>=1.0f)
     {
-        eulerAngle.x = M_PI/2.0f;
+        eulerAngle[0] = M_PI/2.0f;
     }
     else
     {
-        eulerAngle.x = asin(sp);
+        eulerAngle[0] = asin(sp);
     }
 
     if(fabs(sp) > 0.9999f)
     {
-        eulerAngle.z = 0.0f;
-        eulerAngle.y = atan2(-matrix.rows[1][3],matrix.rows[1][1]);
+        eulerAngle[2] = 0.0f;
+        eulerAngle[1] = atan2(-matrix.rows[1][3],matrix.rows[1][1]);
     }
     else
     {
-        eulerAngle.z = atan2(-matrix.rows[1][2],matrix.rows[2][2]);
-        eulerAngle.y = atan2(-matrix.rows[3][1],matrix.rows[3][3]);
+        eulerAngle[2] = atan2(-matrix.rows[1][2],matrix.rows[2][2]);
+        eulerAngle[1] = atan2(-matrix.rows[3][1],matrix.rows[3][3]);
     }
     return eulerAngle;
 }
@@ -122,12 +122,12 @@ mat4f GMathUtils::EulerAngleToRotationMatrix(vec3f eulerAngle)
 {
     mat4f rotMat;
     rotMat.identity();
-    float ch = cos(eulerAngle.y);
-    float cp = cos(eulerAngle.x);
-    float cb = cos(eulerAngle.z);
-    float sh = sin(eulerAngle.y);
-    float sp = sin(eulerAngle.x);
-    float sb = sin(eulerAngle.z);
+    float ch = cos(eulerAngle[1]);
+    float cp = cos(eulerAngle[0]);
+    float cb = cos(eulerAngle[2]);
+    float sh = sin(eulerAngle[1]);
+    float sp = sin(eulerAngle[0]);
+    float sb = sin(eulerAngle[2]);
     rotMat.rows[0][0] = ch*cb+sh*sp*sb;
     rotMat.rows[0][1] = sb*cp;
     rotMat.rows[0][2] = -sh*cb+ch*sp*sb;
@@ -144,13 +144,13 @@ mat4f GMathUtils::TRS(vec3f &translate, vec3f &rotation, vec3f &scale)
 {
     mat4f ret;
     ret.identity();
-    ret[0][3] = translate.x;
-    ret[1][3] = translate.y;
-    ret[2][3] = translate.z;
+    ret[0][3] = translate[0];
+    ret[1][3] = translate[1];
+    ret[2][3] = translate[2];
     ret = EulerAngleToRotationMatrix(rotation) * ret;
-    ret[0][0] *= scale.x;
-    ret[1][1] *= scale.y;
-    ret[2][2] *= scale.z;
+    ret[0][0] *= scale[0];
+    ret[1][1] *= scale[1];
+    ret[2][2] *= scale[2];
     return ret;
 }
 
@@ -167,17 +167,17 @@ float GMathUtils::Deg2Rad(float degree)
 vec3f GMathUtils::Rad2Deg(vec3f rad)
 {
     vec3f angle;
-    angle.x = Rad2Deg(rad.x);
-    angle.y = Rad2Deg(rad.y);
-    angle.z = Rad2Deg(rad.z);
+    angle[0] = Rad2Deg(rad[0]);
+    angle[2] = Rad2Deg(rad[1]);
+    angle[3] = Rad2Deg(rad[2]);
     return angle;
 }
 
 vec3f GMathUtils::Deg2Rad(vec3f degree)
 {
     vec3f angle;
-    angle.x = Deg2Rad(degree.x);
-    angle.y = Deg2Rad(degree.y);
-    angle.z = Deg2Rad(degree.z);
+    angle[0] = Deg2Rad(degree[0]);
+    angle[2] = Deg2Rad(degree[1]);
+    angle[3] = Deg2Rad(degree[2]);
     return angle;
 }

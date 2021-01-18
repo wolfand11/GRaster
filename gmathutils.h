@@ -20,6 +20,7 @@ public:
     static GMath::vec3f Rad2Deg(GMath::vec3f rad);
     static GMath::vec3f Deg2Rad(GMath::vec3f degree);
 
+    // color helper
 };
 
 #endif // GMATHUTILS_H

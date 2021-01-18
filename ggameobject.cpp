@@ -80,6 +80,20 @@ void GGameObject::SetViewport(int x, int y, int w, int h)
     viewportH = h;
 }
 
+void GGameObject::Viewport(const mat3 *&tviewport)
+{
+    if(_viewport_dirty)
+    {
+        viewportMat.identity();
+        viewportMat[0][0] = (float)viewportW/2.0;
+        viewportMat[0][2] = viewportX + viewportMat[0][0];
+        viewportMat[1][1] = (float)viewportH/2.0;
+        viewportMat[1][2] = viewportY + viewportMat[1][1];
+        _viewport_dirty = false;
+    }
+    tviewport = &viewportMat;
+}
+
 GMath::mat4f &GGameObject::LookAt(GMath::vec3f eyePos, GMath::vec3f lookAtPoint, GMath::vec3f up)
 {
     _position = eyePos;
@@ -98,9 +112,9 @@ GMath::mat4f &GGameObject::LookAt(GMath::vec3f eyePos, GMath::vec3f lookAtPoint,
     }
     _rotation = GMathUtils::RotationMatrixToEulerAngle(transform);
 
-    transform[0][3] = eyePos.x;
-    transform[1][3] = eyePos.y;
-    transform[2][3] = eyePos.z;
+    transform[0][3] = eyePos[0];
+    transform[1][3] = eyePos[1];
+    transform[2][3] = eyePos[2];
     return transform;
 }
 

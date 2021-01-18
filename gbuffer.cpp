@@ -1,6 +1,7 @@
 #include "gbuffer.h"
 #include "glog.h"
 using namespace std;
+using namespace GMath;
 
 GColor GColor::white = {255,255,255,255};
 GColor GColor::black = {0,0,0,255};
@@ -18,11 +19,14 @@ bool GFrameBuffer::CheckAttachIndexValid(int index)
     return true;
 }
 
-
 void GFrameBuffer::AttachRenderBuffer(GColorBuffer *colorbuffer, int index)
 {
     if(!CheckAttachIndexValid(index)) return;
-
+    if(colorBuffer[index]!=nullptr)
+    {
+        SetEnableBlend((GRenderBufferType)index, true);
+        SetEnableScissorTest((GRenderBufferType)index, false);
+    }
     colorBuffer[index] = colorbuffer;
 }
 
@@ -64,6 +68,29 @@ void GFrameBuffer::DrawRenderBuffer(std::initializer_list<GRenderBufferType> ren
 {
     this->drawRenderBufferTypes.clear();
     this->drawRenderBufferTypes.assign(renderBufferTypes.begin(),renderBufferTypes.end());
+
+    CheckRenderBufferSizeValid();
+}
+
+bool GFrameBuffer::CheckRenderBufferSizeValid()
+{
+    int w = -1;
+    int h = -1;
+    std::vector<GColorBuffer*> drawRenderBuffers = GetDrawRenderBuffer();
+    for(auto colorBuffer : drawRenderBuffers)
+    {
+        if(w<0 || h<0)
+        {
+            w = colorBuffer->width;
+            h = colorBuffer->height;
+        }
+        if(w != colorBuffer->width || h!=colorBuffer->height)
+        {
+            GLog::LogError("preW = ", w, " preH = ", h, " curW = ", colorBuffer->width, "curH = ", colorBuffer->height);
+            return false;
+        }
+    }
+    return true;
 }
 
 GColorBuffer *GFrameBuffer::GetRenderBufer(GRenderBufferType renderBufferType)
@@ -73,7 +100,7 @@ GColorBuffer *GFrameBuffer::GetRenderBufer(GRenderBufferType renderBufferType)
     return colorBuffer[renderBufferType];
 }
 
-void GFrameBuffer::GetDrawRenderBuffer(std::vector<GColorBuffer *> &drawRenderBuffers)
+const std::vector<GColorBuffer*>& GFrameBuffer::GetDrawRenderBuffer()
 {
     drawRenderBuffers.clear();
 
@@ -81,9 +108,96 @@ void GFrameBuffer::GetDrawRenderBuffer(std::vector<GColorBuffer *> &drawRenderBu
     {
         drawRenderBuffers.push_back(GetRenderBufer(rbt));
     }
+    return drawRenderBuffers;
 }
 
+int GFrameBuffer::GetDrawRenderBufferCount()
+{
+    return drawRenderBufferTypes.size();
+}
 
+GMath::vec2i GFrameBuffer::GetSize()
+{
+    vec2i size = {-1,-1};
+    std::vector<GColorBuffer*> drawRenderBuffers = GetDrawRenderBuffer();
+    if(drawRenderBuffers.size()>0)
+    {
+        size[0] = drawRenderBuffers[0]->width;
+        size[1] = drawRenderBuffers[0]->height;
+    }
+    return size;
+}
+
+GRenderBufferType GFrameBuffer::GetRenderBufferType(GRenderBuffer *renderBuffer)
+{
+    for(int rbt = GRenderBufferType::kRBFront; rbt<MAX_COLORBUFF_COUNT; rbt++)
+    {
+        if(renderBuffer == colorBuffer[rbt])
+        {
+            return (GRenderBufferType)rbt;
+        }
+    }
+    return GRenderBufferType::kRBNon;
+}
+
+bool GFrameBuffer::IsBlendEnabled(GRenderBufferType renderBufferType)
+{
+    if(!CheckAttachIndexValid(renderBufferType)) return false;
+    for(size_t i=0; i<enableBlend.size(); i++)
+    {
+        if(get<1>(enableBlend[i]) == renderBufferType)
+        {
+            return get<0>(enableBlend[i]);
+        }
+    }
+    return false;
+}
+
+bool GFrameBuffer::IsBlendEnabled(GRenderBuffer *renderBuffer)
+{
+    return IsBlendEnabled(GetRenderBufferType(renderBuffer));
+}
+
+void GFrameBuffer::SetEnableBlend(GRenderBufferType renderBufferType, bool enable)
+{
+    if(!CheckAttachIndexValid(renderBufferType)) return;
+    for(size_t i=0; i<enableBlend.size(); i++)
+    {
+        if(get<1>(enableBlend[i]) == renderBufferType)
+        {
+            get<0>(enableBlend[i]) = enable;
+            return;
+        }
+    }
+    enableBlend.push_back(make_tuple(enable,renderBufferType));
+}
+
+bool GFrameBuffer::IsScissorTestEnabled(GRenderBufferType renderBufferType)
+{
+    if(!CheckAttachIndexValid(renderBufferType)) return false;
+    for(size_t i=0; i<enableScissorTest.size(); i++)
+    {
+        if(get<1>(enableScissorTest[i]) == renderBufferType)
+        {
+            return get<0>(enableScissorTest[i]);
+        }
+    }
+    return false;
+}
+
+void GFrameBuffer::SetEnableScissorTest(GRenderBufferType renderBufferType, bool enable)
+{
+    if(!CheckAttachIndexValid(renderBufferType)) return;
+    for(size_t i=0; i<enableScissorTest.size(); i++)
+    {
+        if(get<1>(enableScissorTest[i]) == renderBufferType)
+        {
+            get<0>(enableScissorTest[i]) = enable;
+            return;
+        }
+    }
+    enableBlend.push_back(make_tuple(enable,renderBufferType));
+}
 
 bool GVertexAttribInfoObject::IsSlotExist(int slot)
 {

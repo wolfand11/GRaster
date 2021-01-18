@@ -7,8 +7,6 @@
 #include "gutils.h"
 using namespace GMath;
 
-const int defaultBufferW = 400;
-const int defaultBufferH = 400;
 GFrameBuffer* frameBuffer;
 GColorBuffer* colorBuffer;
 GDataBuffer*  arrayBuffer; // geometry
@@ -62,8 +60,13 @@ void GRaster::CreateScene()
     cameras.push_back(cameraGObj);
 
     // models
-    models.push_back(GGameObject::CreateModelGObj(GModelType::kMTCube));
+    //models.push_back(GGameObject::CreateModelGObj(GModelType::kMTCube));
     models.push_back(GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("obj/floor.obj")));
+
+    for(auto& model: models)
+    {
+        model.SetupDraw(GLAPI);
+    }
 }
 
 void GRaster::SetupGRaster()
@@ -77,11 +80,6 @@ void GRaster::SetupGRaster()
     GLAPI->AttachRenderBufferToFrameBuffer(frameBuffer, colorBuffer, GRenderBufferType::kRBFront);
     GLAPI->DrawRenderBuffer({GRenderBufferType::kRBFront});
     GLAPI->Clear(GColor::black);
-
-    for(auto& model: models)
-    {
-        model.SetupDraw(GLAPI);
-    }
 }
 
 void GRaster::OnDraw()
