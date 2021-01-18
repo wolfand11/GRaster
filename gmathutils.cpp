@@ -78,14 +78,14 @@ void GMathUtils::DecomposeMatrix(const mat4f& mat, vec3f &translate, vec3f &rota
 {
     mat4f _trans, _rot, _scale;
     DecomposeMatrix(mat, _trans, _rot, _scale);
-    translate[0] = mat.rows[0][3];
-    translate[1] = mat.rows[1][3];
-    translate[2] = mat.rows[2][3];
+    translate.SetX(mat.rows[0][3]);
+    translate.SetY(mat.rows[1][3]);
+    translate.SetZ(mat.rows[2][3]);
 
     rotation = RotationMatrixToEulerAngle(_rot);
-    scale[0] = _scale[0][0];
-    scale[1] = _scale[1][1];
-    scale[2] = _scale[2][2];
+    scale.SetX(_scale[0][0]);
+    scale.SetY(_scale[1][1]);
+    scale.SetZ(_scale[2][2]);
 }
 
 vec3f GMathUtils::RotationMatrixToEulerAngle(mat4f matrix)

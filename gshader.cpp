@@ -87,4 +87,36 @@ S_abs_v2f &GShader::interpolation(GGraphicLibAPI *GLAPI, vec3 lerpFactor)
 
 void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out)
 {
+    frag_out.colors[0] = GColor::ToFloatColor(GColor::red);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

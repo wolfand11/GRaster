@@ -122,8 +122,8 @@ GMath::vec2i GFrameBuffer::GetSize()
     std::vector<GColorBuffer*> drawRenderBuffers = GetDrawRenderBuffer();
     if(drawRenderBuffers.size()>0)
     {
-        size[0] = drawRenderBuffers[0]->width;
-        size[1] = drawRenderBuffers[0]->height;
+        size.SetX(drawRenderBuffers[0]->width);
+        size.SetY(drawRenderBuffers[0]->height);
     }
     return size;
 }

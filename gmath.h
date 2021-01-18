@@ -52,6 +52,22 @@ struct GVect
     static const GVect<T,n> zero;
     static const GVect<T,n> one;
 
+    T& x(){ return data[0]; }
+    T x() const { return data[0]; }
+    void SetX(T v){ data[0]=v; }
+
+    T& y(){ return data[n]; }
+    T y() const { return data[n]; }
+    void SetY(T v){ data[1]=v; }
+
+    T& z(){ return data[n]; }
+    T z() const { return data[n]; }
+    void SetZ(T v){ data[2]=v; }
+
+    T& w(){ return data[n]; }
+    T w() const { return data[n]; }
+    void SetW(T v){ data[3]=v; }
+
     T data[n] = {};
 };
 

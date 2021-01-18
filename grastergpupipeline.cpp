@@ -64,13 +64,13 @@ void GRasterGPUPipeline::RasterTriangle(vec2* verts, GGraphicLibAPI *GLAPI)
     }
 
     vec2i screenPos;
-    for(screenPos[0] = bboxmin[0]; screenPos[0]<bboxmax[0]; screenPos[0]++)
+    for(screenPos.SetX(bboxmin[0]); screenPos.x()<bboxmax[0]; screenPos.x()++)
     {
-        for(screenPos[1] = bboxmin[1]; screenPos[1]<bboxmax[1]; screenPos[1]++)
+        for(screenPos.SetY(bboxmin.y()); screenPos.y()<bboxmax.y(); screenPos.y()++)
         {
             vec3 p_bcpos = __Barycentric(verts[0], verts[1], verts[2], screenPos);
             // culling
-            if(p_bcpos[0]<0 || p_bcpos[1]<0 || p_bcpos[2]<0) continue;
+            if(p_bcpos.x()<0 || p_bcpos.y()<0 || p_bcpos.z()<0) continue;
 
             // interpolation attribution
             S_abs_v2f& interpolationData = GLAPI->activeShader->interpolation(GLAPI, p_bcpos);
@@ -86,10 +86,10 @@ void GRasterGPUPipeline::RasterTriangle(vec2* verts, GGraphicLibAPI *GLAPI)
                 // blending
                 if(GLAPI->activeFramebuffer->IsBlendEnabled(drawRenderBuffer))
                 {
-                    GColor desColor = drawRenderBuffer->GetColor(screenPos[0], screenPos[1]);
+                    GColor desColor = drawRenderBuffer->GetColor(screenPos.x(), screenPos.y());
                 }
                 // write to framebuffer
-                drawRenderBuffer->SetColor(screenPos[0], screenPos[1], srcColor);
+                drawRenderBuffer->SetColor(screenPos.x(), screenPos.y(), srcColor);
             }
         }
     }

@@ -33,10 +33,51 @@ struct GColor
     {
         GColor ret;
         ret.r = (unsigned char)((color[0] * 1.0/(color[0]+1.0))*255);
-        ret.g = (unsigned char)((color[1] * 1.0/(color[2]+1.0))*255);
-        ret.b = (unsigned char)((color[2] * 1.0/(color[3]+1.0))*255);
+        ret.g = (unsigned char)((color[1] * 1.0/(color[1]+1.0))*255);
+        ret.b = (unsigned char)((color[2] * 1.0/(color[2]+1.0))*255);
         ret.a = (unsigned char)(std::max(0.0, std::min(color[3], 1.0)) * 255);
         return ret;
+    }
+
+    static GMath::vec4f ToFloatColor(const GColor& color)
+    {
+        GMath::vec4f ret;
+        ret.SetX(float(color.r)/255);
+        ret.SetY(float(color.g)/255);
+        ret.SetY(float(color.b)/255);
+        ret.SetW(float(color.a)/255);
+        return ret;
+    }
+
+    GMath::vec4f ToFloatColor()
+    {
+        return ToFloatColor(*this);
+    }
+};
+
+struct GHDRColor
+{
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+
+    float intensity;
+
+    static GMath::vec4f ToFloatColor(const GHDRColor& hdrColor)
+    {
+        GMath::vec4f ret;
+        float factor = std::pow(2, hdrColor.intensity);
+        ret.SetX(factor * float(hdrColor.r)/255);
+        ret.SetY(factor * float(hdrColor.g)/255);
+        ret.SetY(factor * float(hdrColor.b)/255);
+        ret.SetW(float(hdrColor.a)/255);
+        return ret;
+    }
+
+    GMath::vec4f ToFloatColor()
+    {
+        return ToFloatColor(*this);
     }
 };
 
