@@ -56,6 +56,7 @@ vec4 GShader::vertex(GGraphicLibAPI *GLAPI, S_abs_appdata *vert_in, int vertIdx)
     S_appdata* appdata = (S_appdata*) vert_in;
     GMath::vec4 wPos = GMath::embed<double,4>(appdata->vert, 1);
     wPos = (mat4)obj2World * wPos;
+    wPos = (mat4)world2View * wPos;
 
     v2f_data_arr[vertIdx].gl_position = (mat4)projMat * wPos;
     v2f_data_arr[vertIdx].uv = appdata->uv;
@@ -87,7 +88,7 @@ S_abs_v2f &GShader::interpolation(GGraphicLibAPI *GLAPI, vec3 lerpFactor)
 
 void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out)
 {
-    frag_out.colors[0] = GColor::ToFloatColor(GColor::red);
+    frag_out.colors.push_back(GColor::ToFloatColor(GColor::red));
 }
 
 

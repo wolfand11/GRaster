@@ -69,6 +69,7 @@ GGameObject GGameObject::CreateProjCamera(float near, float far, float fov)
     cameraGObj.fov = fov;
     assert(far>near);
     cameraGObj.aspectRatio = aspectRatio;
+    cameraGObj._proj_dirty = true;
     return cameraGObj;
 }
 
@@ -80,41 +81,33 @@ void GGameObject::SetViewport(int x, int y, int w, int h)
     viewportH = h;
 }
 
-void GGameObject::Viewport(const mat3 *&tviewport)
+vec2 GGameObject::NDCPosToScreenPos(vec3 ndc)
 {
-    if(_viewport_dirty)
-    {
-        viewportMat.identity();
-        viewportMat[0][0] = (float)viewportW/2.0;
-        viewportMat[0][2] = viewportX + viewportMat[0][0];
-        viewportMat[1][1] = (float)viewportH/2.0;
-        viewportMat[1][2] = viewportY + viewportMat[1][1];
-        _viewport_dirty = false;
-    }
-    tviewport = &viewportMat;
+    vec2 ret;
+    ret.SetX((ndc.x()+1.0)*viewportW*0.5+viewportX);
+    ret.SetY((ndc.y()+1.0)*viewportH*0.5+viewportY);
+    return ret;
 }
 
 GMath::mat4f &GGameObject::LookAt(GMath::vec3f eyePos, GMath::vec3f lookAtPoint, GMath::vec3f up)
 {
     _position = eyePos;
     _scale = vec3f::one;
-    _trs_dirty = false;
 
     transform.identity();
     vec3f forward = (lookAtPoint - eyePos).normalize();
     vec3f right = cross(up, forward).normalize();
     up = cross(forward, right).normalize();
-    for(int ncol=0; ncol<3; ncol++)
-    {
-        transform[0][ncol] = right[ncol];
-        transform[1][ncol] = up[ncol];
-        transform[2][ncol] = forward[ncol];
-    }
+    transform.set_col(0, embed<float,4>(right,0));
+    transform.set_col(1, embed<float,4>(up,0));
+    transform.set_col(2, embed<float,4>(forward,0));
     _rotation = GMathUtils::RotationMatrixToEulerAngle(transform);
 
     transform[0][3] = eyePos[0];
     transform[1][3] = eyePos[1];
     transform[2][3] = eyePos[2];
+    // TODO calc invertTransform to set _trs_dirty false
+    _trs_dirty = true;
     return transform;
 }
 
@@ -123,7 +116,7 @@ void GGameObject::ProjInvertProj(const mat4f*& tproj,const mat4f*& tinvertProj)
     if(_proj_dirty)
     {
         // fov axis is yAxis
-        float zoomY = 1.0/std::tan(fov/2.0);
+        float zoomY = 1.0/std::tan(GMathUtils::Deg2Rad(fov/2.0));
         float zoomX = zoomY / aspectRatio;
         projMat.zero();
         projMat[0][0] = zoomX;

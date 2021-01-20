@@ -49,7 +49,7 @@ public:
     static GGameObject CreateProjCamera(float near, float far, float fov);
     static GGameObject* activeCamera;
     void SetViewport(int x, int y, int w, int h);
-    void Viewport(const GMath::mat3*& tviewport);
+    GMath::vec2 NDCPosToScreenPos(GMath::vec3 ndc);
     int viewportX;
     int viewportY;
     int viewportW;
@@ -84,8 +84,6 @@ private:
     GMath::mat4f invertTransform;
 
     // camera
-    GMath::mat3 viewportMat;
-    bool _viewport_dirty = true;
     GMath::mat4f projMat;
     GMath::mat4f invertProjMat;
     bool _proj_dirty = true;

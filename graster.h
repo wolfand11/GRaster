@@ -2,14 +2,20 @@
 #define GRASTER_H
 
 #include <QMainWindow>
+#include <QDialog>
+#include <QTimer>
 #include <QImage>
+#include <QLabel>
 #include "ggameobject.h"
 #include "ggraphiclibapi.h"
+#include <thread>
+#include <condition_variable>
 
 namespace Ui {
 class GRaster;
 }
 
+class GModalMessage;
 class GRaster : public QMainWindow
 {
     Q_OBJECT
@@ -20,13 +26,22 @@ public:
 
 protected:
     virtual void resizeEvent(QResizeEvent* event) override;
+    virtual void closeEvent(QCloseEvent* event) override;
     void CreateScene();
     void SetupGRaster();
-    void OnDraw();
+    void OnPreDraw();
+    void DoDraw();
     void OnPostDraw();
+
+private slots:
+    void on_doDrawBtn_clicked();
+    void _update();
 
 private:
     Ui::GRaster *ui;
+    QLabel* msgLabel;
+    GModalMessage *modalMsg;
+    QTimer updateTimer;
     QImage middleBuffer;
     GGraphicLibAPI* GLAPI;
     GGameObject camera;
@@ -34,6 +49,28 @@ private:
 
     std::vector<GGameObject> cameras;
     std::vector<GGameObject> models;
+
+    int timeCounter;
+    bool isNeedExist;
+    bool isRenderingCompleted;
+    void DoRendering();
+    std::mutex mtx;
+    std::condition_variable hasDrawTask;
+    std::thread renderingThread;
+};
+
+
+namespace Ui {
+class GModalMessage;
+}
+class GModalMessage : public QDialog
+{
+public:
+    GModalMessage(QWidget* parent);
+    void SetMsg(QString msg);
+
+private:
+    Ui::GModalMessage *msgUI;
 };
 
 #endif // GRASTER_H

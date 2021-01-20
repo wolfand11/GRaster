@@ -52,20 +52,20 @@ struct GVect
     static const GVect<T,n> zero;
     static const GVect<T,n> one;
 
-    T& x(){ return data[0]; }
     T x() const { return data[0]; }
+    T& x() { return data[0]; }
     void SetX(T v){ data[0]=v; }
 
-    T& y(){ return data[n]; }
-    T y() const { return data[n]; }
+    T y() const { return data[1]; }
+    T& y() { return data[1]; }
     void SetY(T v){ data[1]=v; }
 
-    T& z(){ return data[n]; }
-    T z() const { return data[n]; }
+    T z() const { return data[2]; }
+    T& z() { return data[2]; }
     void SetZ(T v){ data[2]=v; }
 
-    T& w(){ return data[n]; }
-    T w() const { return data[n]; }
+    T w() const { return data[3]; }
+    T& w() { return data[3]; }
     void SetW(T v){ data[3]=v; }
 
     T data[n] = {};
@@ -181,7 +181,8 @@ typedef GVect<int, 4>  vec4i;
 template<typename T>
 GVect<T,3> cross(const GVect<T,3>& v1, const GVect<T,3>& v2)
 {
-    return GVect<T,3>{v1[2]*v2[3] - v1[3]*v2[2], v1[3]*v2[0] - v1[0]*v2[3], v1[0]*v2[2]-v1[2]*v2[0]};
+    GVect<T,3> ret = GVect<T,3>{v1.y()*v2.z()-v1.z()*v2.y(), v1.z()*v2.x()-v1.x()*v2.z(), v1.x()*v2.y()-v1.y()*v2.x()};
+    return ret;
 }
 
 template<typename T, int nrows, int ncols> struct GMatrix;
@@ -221,6 +222,7 @@ struct GMatrix
                 ret[i][j] = rows[i][j];
             }
         }
+        return ret;
     }
 
     GVect<T, nrows> col(const int idx) const

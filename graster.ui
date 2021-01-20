@@ -509,6 +509,13 @@
             </item>
            </layout>
           </item>
+          <item>
+           <widget class="QPushButton" name="doDrawBtn">
+            <property name="text">
+             <string>Start Rendering</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

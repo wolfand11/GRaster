@@ -55,6 +55,7 @@ HEADERS += \
         tgaimage.h
 
 FORMS += \
+        gmodalmessage.ui \
         graster.ui
 
 RESOURCES +=

@@ -28,13 +28,11 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
         {
             // vertex process
             auto appdata = appdataArr[i+j];
-            GLAPI->activeShader->vertex(GLAPI, appdata, (i-offset)%onePrimitiveVertCount);
+            GLAPI->activeShader->vertex(GLAPI, appdata, j);
 
             // ndc to viewport
             vec3 ndc = proj<double,3>(GLAPI->activeShader->GetV2f(j)->ndc());
-            const mat3* viewportMat;
-            GGameObject::activeCamera->Viewport(viewportMat);
-            primitiveScreenPos[j] = proj<double,2>((*viewportMat) * ndc);
+            primitiveScreenPos[j] = GGameObject::activeCamera->NDCPosToScreenPos(ndc);
         }
         // raster
         if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
