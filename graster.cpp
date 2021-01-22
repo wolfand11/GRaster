@@ -6,6 +6,7 @@
 #include "ggraphiclibapi.h"
 #include "gmath.h"
 #include "gutils.h"
+#include <QDoubleValidator>
 using namespace GMath;
 
 GFrameBuffer* frameBuffer;
@@ -56,13 +57,15 @@ GRaster::GRaster(QWidget *parent) :
     ui->rotationXLineEdit->setValidator(new QDoubleValidator(this));
     ui->rotationYLineEdit->setValidator(new QDoubleValidator(this));
     ui->rotationZLineEdit->setValidator(new QDoubleValidator(this));
+    ui->fovLineEdit->setValidator(new QDoubleValidator(this));
     RefreshUI();
-    connect(ui->poxXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
-    connect(ui->poxYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
-    connect(ui->poxZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
-    connect(ui->rotationXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
-    connect(ui->rotationYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
-    connect(ui->rotationZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraTRS_changed(const QString&)));
+    connect(ui->poxXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->poxYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->poxZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->rotationXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->rotationYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->rotationZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->fovLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
 }
 
 GRaster::~GRaster()
@@ -139,6 +142,7 @@ void GRaster::RefreshUI()
     ui->rotationXLineEdit->setText(QString("%1").arg(mainCamera->rotation().x()));
     ui->rotationYLineEdit->setText(QString("%1").arg(mainCamera->rotation().y()));
     ui->rotationZLineEdit->setText(QString("%1").arg(mainCamera->rotation().z()));
+    ui->fovLineEdit->setText(QString("%1").arg(mainCamera->fov));
 }
 
 void GRaster::OnPreDraw()
@@ -168,7 +172,7 @@ void GRaster::on_doDrawBtn_clicked()
     DoDraw();
 }
 
-void GRaster::on_cameraTRS_changed(const QString& text)
+void GRaster::on_cameraProp_changed(const QString& text)
 {
     GLog::LogInfo("trs changed!");
 
@@ -185,6 +189,7 @@ void GRaster::on_cameraTRS_changed(const QString& text)
     rot.SetY(ui->rotationYLineEdit->text().toFloat());
     rot.SetZ(ui->rotationZLineEdit->text().toFloat());
     mainCamera->SetR(rot);
+    mainCamera->fov = ui->fovLineEdit->text().toFloat();
 }
 
 void GRaster::_update()

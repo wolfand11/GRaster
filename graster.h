@@ -36,7 +36,7 @@ protected:
 
 private slots:
     void on_doDrawBtn_clicked();
-    void on_cameraTRS_changed(const QString& text);
+    void on_cameraProp_changed(const QString& text);
     void _update();
 
 private:
