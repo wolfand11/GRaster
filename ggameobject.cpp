@@ -85,6 +85,12 @@ void GGameObject::SetViewport(int x, int y, int w, int h)
     viewportH = h;
 }
 
+void GGameObject::SetFov(float fov)
+{
+    this->fov = fov;
+    _proj_dirty = true;
+}
+
 vec2 GGameObject::NDCPosToScreenPos(vec3 ndc)
 {
     vec2 ret;

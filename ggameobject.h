@@ -59,6 +59,7 @@ public:
     static GGameObject CreateProjCamera(float near, float far, float fov);
     static GGameObject* activeCamera;
     void SetViewport(int x, int y, int w, int h);
+    void SetFov(float fov);
     GMath::vec2 NDCPosToScreenPos(GMath::vec3 ndc);
     int viewportX;
     int viewportY;
