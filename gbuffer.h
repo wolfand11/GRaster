@@ -7,6 +7,7 @@
 #include <functional>
 #include "ggraphiclibdefine.h"
 #include "gmath.h"
+#include "tgaimage.h"
 class GRenderBuffer;
 class GColorBuffer;
 class GDepthStencilBuffer;
@@ -28,6 +29,7 @@ struct GColor
     static GColor red;
     static GColor green;
     static GColor blue;
+    static GColor gray;
 
     static GColor FastTonemap(GMath::vec4 color)
     {
@@ -42,12 +44,25 @@ struct GColor
     static GMath::vec4f ToFloatColor(const GColor& color)
     {
         GMath::vec4f ret;
-        ret.SetX(float(color.r)/255);
-        ret.SetY(float(color.g)/255);
-        ret.SetY(float(color.b)/255);
-        ret.SetW(float(color.a)/255);
+        ret.SetX(((float)color.r)/255.0);
+        ret.SetY(((float)color.g)/255.0);
+        ret.SetZ(((float)color.b)/255.0);
+        ret.SetW(((float)color.a)/255.0);
         return ret;
     }
+
+    static GColor TgaColor(TGAColor tgaColor)
+    {
+        GColor color;
+        color.r = tgaColor.bgra[2];
+        color.g = tgaColor.bgra[1];
+        color.b = tgaColor.bgra[0];
+        color.a = tgaColor.bgra[3];
+        return color;
+    }
+
+    static GColor Lerp(TGAColor color1, TGAColor color2, float f);
+    static GColor Lerp(GColor color1, GColor color2, float f);
 
     GMath::vec4f ToFloatColor()
     {

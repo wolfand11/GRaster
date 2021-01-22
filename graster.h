@@ -29,12 +29,14 @@ protected:
     virtual void closeEvent(QCloseEvent* event) override;
     void CreateScene();
     void SetupGRaster();
+    void RefreshUI();
     void OnPreDraw();
     void DoDraw();
     void OnPostDraw();
 
 private slots:
     void on_doDrawBtn_clicked();
+    void on_cameraTRS_changed(const QString& text);
     void _update();
 
 private:
@@ -44,8 +46,6 @@ private:
     QTimer updateTimer;
     QImage middleBuffer;
     GGraphicLibAPI* GLAPI;
-    GGameObject camera;
-    GGameObject light;
 
     std::vector<GGameObject> cameras;
     std::vector<GGameObject> models;

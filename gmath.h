@@ -35,7 +35,7 @@ struct GVect
         return data[i];
     }
 
-    template<typename T1> operator GVect<T1,n>()
+    template<typename T1> operator GVect<T1,n>() const
     {
         GVect<T1,n> ret;
         for(int i=0; i<n; i++)
@@ -45,8 +45,8 @@ struct GVect
         return ret;
     }
 
-    T length2() const { return ((*this)*(*this)); }
-    T length() const { return std::sqrt((*this)*(*this)); }
+    T length2() const { return dot(*this,*this); }
+    T length() const { return std::sqrt(dot(*this,*this)); }
     GVect& normalize() { *this = (*this)/length(); return *this; }
 
     static const GVect<T,n> zero;
@@ -70,17 +70,6 @@ struct GVect
 
     T data[n] = {};
 };
-
-template <typename T, int n>
-T operator*(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
-{
-    T ret = 0;
-    for(int i=0; i<n; i++)
-    {
-        ret += lhs[i]*rhs[i];
-    }
-    return ret;
-}
 
 template <typename T, int n>
 GVect<T,n> operator+(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
@@ -133,6 +122,28 @@ GVect<T,n> operator/(const GVect<T,n>& lhs, const ST& rhs)
     for(int i=0; i<n; i++)
     {
         ret[i] /= rhs;
+    }
+    return ret;
+}
+
+template <typename T, int n>
+GVect<T,n> operator*(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
+{
+    GVect<T,n> ret = lhs;
+    for(int i=0; i<n; i++)
+    {
+        ret[i] *= rhs[i];
+    }
+    return ret;
+}
+
+template <typename T, int n>
+T dot(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
+{
+    T ret = 0;
+    for(int i=0; i<n; i++)
+    {
+        ret += lhs[i]*rhs[i];
     }
     return ret;
 }
@@ -301,7 +312,7 @@ struct GMatrix
     GMatrix<T,nrows,ncols> invert_transpose() const
     {
         GMatrix<T,nrows,ncols> ret = adjugate();
-        return ret / (ret[0]*rows[0]);
+        return ret / dot(ret[0],rows[0]);
     }
     GMatrix<T,nrows,ncols> invert() const
     {
@@ -323,7 +334,7 @@ GVect<T,nrows> operator*(const GMatrix<T,nrows,ncols>& lhs, const GVect<T,ncols>
     GVect<T,nrows> ret;
     for(int i=0; i<nrows; i++)
     {
-        ret[i] = lhs[i]*rhs;
+        ret[i] = dot(lhs[i],rhs);
     }
     return ret;
 }
@@ -335,7 +346,7 @@ GMatrix<T,R1,C2> operator*(const GMatrix<T,R1,C1>& lhs, const GMatrix<T,C1,C2>& 
     {
         for(int j=0; j<C2; j++)
         {
-            ret[i][j] = lhs[i]*rhs.col(j);
+            ret[i][j] = dot(lhs[i],rhs.col(j));
         }
     }
     return ret;

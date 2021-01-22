@@ -179,6 +179,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -217,6 +223,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -254,6 +266,12 @@
               </property>
               <property name="maxLength">
                <number>10</number>
+              </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -304,6 +322,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -342,6 +366,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -379,6 +409,12 @@
               </property>
               <property name="maxLength">
                <number>10</number>
+              </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -429,6 +465,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -467,6 +509,12 @@
               <property name="maxLength">
                <number>10</number>
               </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
             <item>
@@ -504,6 +552,12 @@
               </property>
               <property name="maxLength">
                <number>10</number>
+              </property>
+              <property name="echoMode">
+               <enum>QLineEdit::Normal</enum>
+              </property>
+              <property name="clearButtonEnabled">
+               <bool>false</bool>
               </property>
              </widget>
             </item>

@@ -11,7 +11,7 @@ class GRasterGPUPipeline
 {
 public:
     static void ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs_appdata*> appdataArr, int offset);
-    static void RasterTriangle(GMath::vec2* verts, GGraphicLibAPI* GLAPI);
+    static void RasterTriangle(GMath::vec4* vertsClipPos, GMath::vec2* vertsScreenPos, GGraphicLibAPI* GLAPI);
 
     static void DrawLine(int x0, int y0, int x1, int y1, GColor color, std::vector<GColorBuffer*>& colorBuffers, GDepthStencilBuffer* depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader* shader, GPolygonMode mode);
     static void DrawTriangle(GMath::vec2i t0, GMath::vec2i t1, GMath::vec2i t2, GColor color, std::vector<GColorBuffer*>& colorBuffers, GDepthStencilBuffer* depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader* shader, GPolygonMode mode);

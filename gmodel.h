@@ -80,8 +80,11 @@ struct GGLModel
     std::vector<GMath::vec3> norms_;
 
     TGAImage diffusemap_;
+    std::vector<TGAImage> diffusemap_mipmaps_;
     TGAImage normalmap_;
+    std::vector<TGAImage> normalmap_mipmaps_;
     TGAImage specularmap_;
+    std::vector<TGAImage> specularmap_mipmaps_;
 };
 
 #endif // GMODEL_H

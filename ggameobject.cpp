@@ -7,6 +7,8 @@ using namespace GMath;
 using namespace std;
 
 GGameObject* GGameObject::activeCamera = nullptr;
+vector<GGameObject> GGameObject::lights;
+
 GGameObject::GGameObject(GGameObject::GGameObjectType t, int subType)
     :mtype(t)
 {
@@ -16,7 +18,7 @@ GGameObject::GGameObject(GGameObject::GGameObjectType t, int subType)
         cameraType = (GCameraType)subType;
         break;
     case GGameObjectType::kLight:
-        lightType = (GLightType)subType;
+        lightInfo.lightType = (GLightType)subType;
         break;
     case GGameObjectType::kModel:
         break;
@@ -31,7 +33,9 @@ void GGameObject::SetT(vec3f pos)
 
 void GGameObject::SetR(vec3f rotation)
 {
-    this->_rotation = rotation;
+    this->_rotation.SetX(GMathUtils::Deg2Rad(rotation.x()));
+    this->_rotation.SetY(GMathUtils::Deg2Rad(rotation.y()));
+    this->_rotation.SetZ(GMathUtils::Deg2Rad(rotation.z()));
     _trs_dirty = true;
 }
 
@@ -43,9 +47,9 @@ void GGameObject::SetS(vec3f scale)
 
 void GGameObject::SetTRS(vec3f pos, vec3f rotation, vec3f scale)
 {
-    this->_position = pos;
-    this->_rotation = rotation;
-    this->_scale = scale;
+    SetT(pos);
+    SetR(rotation);
+    SetS(scale);
 }
 
 void GGameObject::TRSInvertTRS(const mat4f* &trs, const mat4f* &invertTRS)
@@ -139,6 +143,15 @@ void GGameObject::ProjInvertProj(const mat4f*& tproj,const mat4f*& tinvertProj)
     tinvertProj = &invertProjMat;
 }
 
+GGameObject& GGameObject::CreateLightGObj(GLightType lightType, GColor lColor, float lIntensity)
+{
+    GGameObject light = GGameObject(GGameObject::GGameObjectType::kLight, lightType);
+    light.lightInfo.lightColor = lColor;
+    light.lightInfo.lightIntensity = lIntensity;
+    lights.push_back(std::move(light));
+    return lights[lights.size()-1];
+}
+
 GGameObject GGameObject::CreateModelGObj(GModelType modelType, std::string modelPath)
 {
     GGameObject gObj(GGameObjectType::kModel, modelType);
@@ -229,6 +242,7 @@ void GGameObject::DrawModel(GGraphicLibAPI *GLAPI)
     const mat4f* tMat;
     const mat4f* tInvertMat;
     TRSInvertTRS(tMat, tInvertMat);
+    GLAPI->activeShader->world2Obj = *tInvertMat;
     GLAPI->activeShader->obj2World = *tMat;
     // set camera uniform variable
     GGameObject::activeCamera->TRSInvertTRS(tMat, tInvertMat);
@@ -236,9 +250,35 @@ void GGameObject::DrawModel(GGraphicLibAPI *GLAPI)
     GGameObject::activeCamera->ProjInvertProj(tMat, tInvertMat);
     GLAPI->activeShader->projMat = *tMat;
     GLAPI->activeShader->invertProjMat = *tInvertMat;
+    GLAPI->activeShader->diffusemap_ = &(model.diffusemap_);
+    GLAPI->activeShader->normalmap_ = &(model.normalmap_);
+    GLAPI->activeShader->specularmap_ = &(model.specularmap_);
+    FillLightData(GLAPI);
 
     GLAPI->BindVAO(modelVAO);
-    //GLAPI->DrawArrays(GPrimitiveType::kTriangles, 0, 3);
     GLAPI->DrawElements(GPrimitiveType::kTriangles, model.indexCount(), GDatumType::kInt, 0);
     GLAPI->BindVAO(nullptr);
+}
+
+void GGameObject::FillLightData(GGraphicLibAPI* GLAPI)
+{
+    GLAPI->activeShader->lights.clear();
+    for(size_t i=0; i<lights.size(); i++)
+    {
+        GGameObject& light = lights[i];
+        GLightInfo* lightInfo = &(light.lightInfo);
+        if(lightInfo->lightType == GLightType::kLTPoint)
+        {
+            lightInfo->lightPosOrDir = light.position();
+        }
+        else if(lightInfo->lightType == GLightType::kLTDirection)
+        {
+            const mat4f* tMat;
+            const mat4f* tInvertMat;
+            light.TRSInvertTRS(tMat, tInvertMat);
+            lightInfo->lightPosOrDir = (*tInvertMat).get_minor(3,3).transpose() * vec3f(0,0,1);
+            lightInfo->lightPosOrDir.normalize();
+        }
+        GLAPI->activeShader->lights.push_back(lightInfo);
+    }
 }

@@ -5,6 +5,20 @@
 #include "gbuffer.h"
 #include "gshader.h"
 
+enum GLightType
+{
+    kLTDirection,
+    kLTPoint,
+};
+
+struct GLightInfo
+{
+    GColor lightColor;
+    float lightIntensity;
+    GLightType lightType;
+    GMath::vec3 lightPosOrDir;
+};
+
 class GGraphicLibAPI;
 class GGameObject
 {
@@ -22,11 +36,7 @@ public:
         kProjection,
     };
 
-    enum GLightType
-    {
-        kDirection,
-        kPoint,
-    };
+
     GGameObject()=default;
     GGameObject(GGameObjectType t,int subType);
 
@@ -63,8 +73,9 @@ public:
     void ProjInvertProj(const GMath::mat4f*& tproj,const GMath::mat4f*& tinvertProj);
 
     // light
+    static GGameObject& CreateLightGObj(GLightType lightType, GColor lColor=GColor::white, float lIntensity=1);
     static std::vector<GGameObject> lights;
-    GLightType lightType;
+    GLightInfo lightInfo;
 
     // model
     static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="");
@@ -87,6 +98,9 @@ private:
     GMath::mat4f projMat;
     GMath::mat4f invertProjMat;
     bool _proj_dirty = true;
+
+    // light
+    void FillLightData(GGraphicLibAPI* GLAPI);
 };
 
 #endif // GGAMEOBJECT_H

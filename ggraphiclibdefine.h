@@ -9,9 +9,10 @@ enum GFrontFace
 
 enum GFaceType
 {
-    kFront,
-    kBack,
-    kFrontAndBack
+    kFTNone,
+    kFTFront,
+    kFTBack,
+    kFTFrontAndBack
 };
 
 enum GPrimitiveType

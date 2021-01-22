@@ -15,6 +15,10 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
     if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
     {
         onePrimitiveVertCount = 3;
+        if(GLAPI->activeShader->cullFaceType == GFaceType::kFTFrontAndBack)
+        {
+            return;
+        }
     }
     else if(GLAPI->activePrimitiveType == GPrimitiveType::kLines)
     {
@@ -24,27 +28,57 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
     for(size_t i=offset; i<appdataArr.size(); i=i+onePrimitiveVertCount)
     {
         vec2 primitiveScreenPos[onePrimitiveVertCount];
+        vec4 clipPos[onePrimitiveVertCount];
         for(int j=0; j<onePrimitiveVertCount; j++)
         {
             // vertex process
             auto appdata = appdataArr[i+j];
-            GLAPI->activeShader->vertex(GLAPI, appdata, j);
+            clipPos[j] = GLAPI->activeShader->vertex(GLAPI, appdata, j);
 
             // ndc to viewport
-            vec3 ndc = proj<double,3>(GLAPI->activeShader->GetV2f(j)->ndc());
+            vec3 ndc = proj<double,3>(clipPos[j]/clipPos[j].w());
             primitiveScreenPos[j] = GGameObject::activeCamera->NDCPosToScreenPos(ndc);
         }
         // raster
         if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
         {
+            // triangle
+            vec3 triangleSurfaceNormal;
+            if(GLAPI->currentFrontFace==GFrontFace::kClockwise)
+            {
+                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0],0), embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[1], 0));
+            }
+            else if(GLAPI->currentFrontFace==GFrontFace::kCounterClockwise)
+            {
+                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[1], 0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0],0));
+            }
+            else
+            {
+                assert(false);
+            }
+            // HSR hide surface remove
+            if(GLAPI->activeShader->cullFaceType == GFaceType::kFTBack)
+            {
+                if(dot(triangleSurfaceNormal, vec3(0,0, 1))>0)
+                {
+                    continue;
+                }
+            }
+            else if(GLAPI->activeShader->cullFaceType == GFaceType::kFTFront)
+            {
+                if(dot(triangleSurfaceNormal, vec3(0,0,-1))>0)
+                {
+                    continue;
+                }
+            }
             // interpolation attribution
             // invoke pixel shader
-            RasterTriangle(primitiveScreenPos, GLAPI);
+            RasterTriangle(clipPos, primitiveScreenPos, GLAPI);
         }
     }
 }
 
-void GRasterGPUPipeline::RasterTriangle(vec2* verts, GGraphicLibAPI *GLAPI)
+void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos, GGraphicLibAPI *GLAPI)
 {
     const std::vector<GColorBuffer*>& drawRenderBuffers = GLAPI->activeFramebuffer->GetDrawRenderBuffer();
     vec2i bufferSize = GLAPI->activeFramebuffer->GetSize();
@@ -56,38 +90,119 @@ void GRasterGPUPipeline::RasterTriangle(vec2* verts, GGraphicLibAPI *GLAPI)
     {
         for(int datumIdx=0; datumIdx<2; datumIdx++)
         {
-            bboxmin[datumIdx] = max(                     0, min((int)verts[vertIdx][datumIdx], bboxmin[datumIdx]));
-            bboxmax[datumIdx] = min(max_boundary[datumIdx], max((int)verts[vertIdx][datumIdx], bboxmax[datumIdx]));
+            bboxmin[datumIdx] = max(                     0, min((int)vertsScreenPos[vertIdx][datumIdx], bboxmin[datumIdx]));
+            bboxmax[datumIdx] = min(max_boundary[datumIdx], max((int)vertsScreenPos[vertIdx][datumIdx], bboxmax[datumIdx]));
+        }
+    }
+
+    // four fragment in a group
+    vec2i pixelCount = bboxmax - bboxmin + vec2i::one;
+    if(pixelCount.x()%2 > 0)
+    {
+        if(bboxmin.x() > 0)
+        {
+            bboxmin.SetX(bboxmin.x()-1);
+        }
+        else
+        {
+            bboxmax.SetX(bboxmax.x()+1);
+        }
+    }
+    if(pixelCount.y()%2 > 0)
+    {
+        if(bboxmin.y() > 0)
+        {
+            bboxmin.SetY(bboxmin.y()-1);
+        }
+        else
+        {
+            bboxmax.SetY(bboxmax.y()+1);
         }
     }
 
     vec2i screenPos;
-    for(screenPos.SetX(bboxmin[0]); screenPos.x()<bboxmax[0]; screenPos.x()++)
+    vec2i fragScreenPos[4];
+    bool fragNeedRendering[4];
+    vec3 fragScreenBCPos[4];
+    vec3 fragClipBCPos[4];
+    for(screenPos.SetX(bboxmin.x()); screenPos.x()<=bboxmax.x(); screenPos.SetX(screenPos.x()+2))
     {
-        for(screenPos.SetY(bboxmin.y()); screenPos.y()<bboxmax.y(); screenPos.y()++)
+        for(screenPos.SetY(bboxmin.y()); screenPos.y()<=bboxmax.y(); screenPos.SetY(screenPos.y()+2))
         {
-            vec3 p_bcpos = __Barycentric(verts[0], verts[1], verts[2], screenPos);
+            fragScreenPos[0] = screenPos;
+            fragScreenPos[1] = screenPos+vec2i(1,0);
+            fragScreenPos[2] = screenPos+vec2i(0,1);
+            fragScreenPos[3] = screenPos+vec2i(1,1);
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
+            {
+                fragScreenBCPos[fragIdx] = __Barycentric(vertsScreenPos[0], vertsScreenPos[1], vertsScreenPos[2], fragScreenPos[fragIdx]);
+                fragClipBCPos[fragIdx] = fragScreenBCPos[fragIdx];
+            }
+
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
+            {
+                if(fragScreenBCPos[fragIdx].x()<0 || fragScreenBCPos[fragIdx].y()<0 || fragScreenBCPos[fragIdx].z()<0)
+                {
+                    fragNeedRendering[fragIdx] = false;
+                }
+                else
+                {
+                    fragNeedRendering[fragIdx] = true;
+                }
+            }
+
+            bool isAnyNeedRendering = false;
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
+            {
+                if(fragNeedRendering[fragIdx])
+                {
+                    isAnyNeedRendering = true;
+                    break;
+                }
+            }
             // culling
-            if(p_bcpos.x()<0 || p_bcpos.y()<0 || p_bcpos.z()<0) continue;
+            if(!isAnyNeedRendering) continue;
+
+            // perspective correction
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
+            {
+                if(GGameObject::activeCamera->cameraType == GGameObject::GCameraType::kProjection)
+                {
+                    fragClipBCPos[fragIdx].SetX(fragScreenBCPos[fragIdx].x()/vertsClipPos[0].w());
+                    fragClipBCPos[fragIdx].SetY(fragScreenBCPos[fragIdx].y()/vertsClipPos[1].w());
+                    fragClipBCPos[fragIdx].SetZ(fragScreenBCPos[fragIdx].z()/vertsClipPos[2].w());
+                    fragClipBCPos[fragIdx] = fragClipBCPos[fragIdx]/(fragClipBCPos[fragIdx].x()+fragClipBCPos[fragIdx].y()+fragClipBCPos[fragIdx].z());
+                }
+            }
 
             // interpolation attribution
-            S_abs_v2f& interpolationData = GLAPI->activeShader->interpolation(GLAPI, p_bcpos);
+            S_abs_v2f* interpolationData[4];
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
+            {
+                interpolationData[fragIdx] = GLAPI->activeShader->interpolation(GLAPI, fragClipBCPos[fragIdx], fragIdx);
+            }
+
             // early-fragment test: scissor test -> multisample fragment op -> stencil test -> depth test --> occlusion query sample counting
             // invoke pixel shader
-            S_fout fout;
-            GLAPI->activeShader->fragment(interpolationData, fout);
-            // merge: scissor test --> alpha to coverage op --> stencil test --> depth test --> blending --> dithering --> logic op --> addition multisample fragment op --> write to framebuffer
-            for(size_t outColorCount=0; outColorCount<fout.colors.size(); outColorCount++)
+            for(int fragIdx=0; fragIdx<4; fragIdx++)
             {
-                GColorBuffer* drawRenderBuffer = drawRenderBuffers[outColorCount];
-                GColor srcColor = GColor::FastTonemap(fout.colors[outColorCount]);
-                // blending
-                if(GLAPI->activeFramebuffer->IsBlendEnabled(drawRenderBuffer))
+                if(!fragNeedRendering[fragIdx]) continue;
+
+                S_fout fout;
+                GLAPI->activeShader->fragment(*interpolationData[fragIdx], fout);
+                // merge: scissor test --> alpha to coverage op --> stencil test --> depth test --> blending --> dithering --> logic op --> addition multisample fragment op --> write to framebuffer
+                for(size_t outColorIdx=0; outColorIdx<fout.colors.size(); outColorIdx++)
                 {
-                    GColor desColor = drawRenderBuffer->GetColor(screenPos.x(), screenPos.y());
+                    GColorBuffer* drawRenderBuffer = drawRenderBuffers[outColorIdx];
+                    GColor srcColor = GColor::FastTonemap(fout.colors[outColorIdx]);
+                    // blending
+                    if(GLAPI->activeFramebuffer->IsBlendEnabled(drawRenderBuffer))
+                    {
+                        GColor desColor = drawRenderBuffer->GetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y());
+                    }
+                    // write to framebuffer
+                    drawRenderBuffer->SetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y(), srcColor);
                 }
-                // write to framebuffer
-                drawRenderBuffer->SetColor(screenPos.x(), screenPos.y(), srcColor);
             }
         }
     }
@@ -100,7 +215,6 @@ void GRasterGPUPipeline::DrawLine(int x0, int y0, int x1, int y1, GColor color, 
 
 void GRasterGPUPipeline::DrawTriangle(GMath::vec2i t0, GMath::vec2i t1, GMath::vec2i t2, GColor color, std::vector<GColorBuffer *>& colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
 {
-    //__DrawTriangleV1(t0,t1,t2,color,colorBuffers,depthBuffer,stencilBuffer,shader, mode);
     __DrawTriangleV2(t0,t1,t2,color,colorBuffers,depthBuffer,stencilBuffer,shader, mode);
 }
 

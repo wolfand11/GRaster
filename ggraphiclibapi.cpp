@@ -225,33 +225,6 @@ void GGraphicLibAPI::DrawArrays(GPrimitiveType t, int vertexOffsetCount, int ver
     ParseVertexData(vertexCount, slotVertexAttribArr_Arr);
     CreateAppData(appdataArr, slotVertexAttribArr_Arr);
     GRasterGPUPipeline::ProcessAppData(this, appdataArr, vertexOffsetCount);
-
-//    for(int i=0; i<activeVertexAttriInfoObject->MAX_VERTEX_ATTRIB_COUNT; i++)
-//    {
-//        if(t == GPrimitiveType::kLines)
-//        {
-//            for(int drawIdx=0; drawIdx<vertexCount/2; drawIdx++)
-//            {
-//                GRasterGPUPipeline::DrawLine(
-//                    posElemArr[drawIdx*4 + 0],
-//                    posElemArr[drawIdx*4 + 1],
-//                    posElemArr[drawIdx*4 + 2],
-//                    posElemArr[drawIdx*4 + 3],
-//                    GColor::blue, drawRenderBuffers, activeDepthBuffer, activeStencilBuffer, activeShader, activePolygonMode);
-//            }
-//        }
-//        else if(t == GPrimitiveType::kTriangles)
-//        {
-//            for(int drawIdx=0; drawIdx<vertexCount/3; drawIdx++)
-//            {
-//                GRasterGPUPipeline::DrawTriangle(
-//                    vec2(posElemArr[drawIdx*6 + 0], posElemArr[drawIdx*6 + 1]),
-//                    vec2(posElemArr[drawIdx*6 + 2], posElemArr[drawIdx*6 + 3]),
-//                    vec2(posElemArr[drawIdx*6 + 4], posElemArr[drawIdx*6 + 5]),
-//                    GColor::blue, drawRenderBuffers, activeDepthBuffer, activeStencilBuffer, activeShader, activePolygonMode);
-//            }
-//        }
-//    }
 }
 
 void GGraphicLibAPI::DrawElements(GPrimitiveType t, int vertCount, GDatumType indexType, int offsetBytes)
