@@ -31,6 +31,18 @@ void GFrameBuffer::AttachRenderBuffer(GColorBuffer *colorbuffer, int index)
     colorBuffer[index] = colorbuffer;
 }
 
+void GFrameBuffer::AttachRenderBuffer(GDepthStencilBuffer *depthStencilBuffer, bool isDepth)
+{
+    if(isDepth)
+    {
+        depthBuffer = depthStencilBuffer;
+    }
+    else
+    {
+        stencilBuffer = depthStencilBuffer;
+    }
+}
+
 void GFrameBuffer::ClearRenderBuffer(int index, GColor clearColor)
 {
     if(!CheckAttachIndexValid(index)) return;
@@ -43,26 +55,24 @@ void GFrameBuffer::ClearRenderBuffer(int index, GColor clearColor)
     colorBuffer[index]->Clear(clearColor);
 }
 
-void GFrameBuffer::ClearRenderBuffer(int clearValue, bool isDepthBuffer)
+void GFrameBuffer::ClearDepthBuffer(float clearDepthValue)
 {
-    if(isDepthBuffer)
+    if(depthBuffer==nullptr)
     {
-        if(depthBuffer==nullptr)
-        {
-            GLog::LogError("depthBuffer==nullptr");
-            return;
-        }
-        depthBuffer->Clear(clearValue);
+        GLog::LogError("depthBuffer==nullptr");
+        return;
     }
-    else
+    depthBuffer->ClearF(clearDepthValue);
+}
+
+void GFrameBuffer::ClearStencilBuffer(int clearValue)
+{
+    if(stencilBuffer==nullptr)
     {
-        if(stencilBuffer==nullptr)
-        {
-            GLog::LogError("stencilBuffer==nullptr");
-            return;
-        }
-        depthBuffer->Clear(clearValue);
+        GLog::LogError("stencilBuffer==nullptr");
+        return;
     }
+    stencilBuffer->Clear(clearValue);
 }
 
 void GFrameBuffer::DrawRenderBuffer(std::initializer_list<GRenderBufferType> renderBufferTypes)

@@ -61,6 +61,7 @@ public:
     void SetViewport(int x, int y, int w, int h);
     void SetFov(float fov);
     GMath::vec2 NDCPosToScreenPos(GMath::vec3 ndc);
+    float ToWBufferValue(float wValue);
     int viewportX;
     int viewportY;
     int viewportW;

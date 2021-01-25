@@ -99,6 +99,14 @@ vec2 GGameObject::NDCPosToScreenPos(vec3 ndc)
     return ret;
 }
 
+float GGameObject::ToWBufferValue(float wValue)
+{
+    wValue = min(max(wValue, near), far);
+    wValue -= near;
+    wValue /= (far-near);
+    return (wValue*2.0-1.0);
+}
+
 GMath::mat4f &GGameObject::LookAt(GMath::vec3f eyePos, GMath::vec3f lookAtPoint, GMath::vec3f up)
 {
     _position = eyePos;
@@ -283,7 +291,7 @@ void GGameObject::FillLightData(GGraphicLibAPI* GLAPI)
             const mat4f* tInvertMat;
             light.TRSInvertTRS(tMat, tInvertMat);
             lightInfo->lightPosOrDir = (*tInvertMat).get_minor(3,3).transpose() * vec3f(0,0,1);
-            lightInfo->lightPosOrDir.normalize();
+            lightInfo->lightPosOrDir.normalize().inverse();
         }
         GLAPI->activeShader->lights.push_back(lightInfo);
     }

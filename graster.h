@@ -10,6 +10,7 @@
 #include "ggraphiclibapi.h"
 #include <thread>
 #include <condition_variable>
+#include <QVector2D>
 
 namespace Ui {
 class GRaster;
@@ -27,6 +28,7 @@ public:
 protected:
     virtual void resizeEvent(QResizeEvent* event) override;
     virtual void closeEvent(QCloseEvent* event) override;
+    virtual void mousePressEvent(QMouseEvent* event) override;
     void CreateScene();
     void SetupGRaster();
     void RefreshUI();
@@ -36,7 +38,7 @@ protected:
 
 private slots:
     void on_doDrawBtn_clicked();
-    void on_cameraProp_changed(const QString& text);
+    void on_drawProp_changed();
     void _update();
 
 private:
@@ -50,6 +52,7 @@ private:
     std::vector<GGameObject> cameras;
     std::vector<GGameObject> models;
 
+    QVector2D prePressedPos{0,0};
     int timeCounter;
     bool isNeedExist;
     bool isRenderingCompleted;

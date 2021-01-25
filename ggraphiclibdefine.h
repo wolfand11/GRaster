@@ -7,12 +7,12 @@ enum GFrontFace
     kClockwise
 };
 
-enum GFaceType
+enum GCullFaceType
 {
     kFTNone,
     kFTFront,
     kFTBack,
-    kFTFrontAndBack
+    kFTShaderSetting
 };
 
 enum GPrimitiveType

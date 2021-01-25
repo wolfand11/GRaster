@@ -48,6 +48,14 @@ struct GVect
     T length2() const { return dot(*this,*this); }
     T length() const { return std::sqrt(dot(*this,*this)); }
     GVect& normalize() { *this = (*this)/length(); return *this; }
+    GVect& inverse()
+    {
+        for(int i=0; i<n; i++)
+        {
+            data[i] = -data[i];
+        }
+        return *this;
+    }
 
     static const GVect<T,n> zero;
     static const GVect<T,n> one;

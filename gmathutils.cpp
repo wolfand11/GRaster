@@ -129,13 +129,13 @@ mat4f GMathUtils::EulerAngleToRotationMatrix(vec3f eulerAngle)
     float sp = sin(eulerAngle[0]);
     float sb = sin(eulerAngle[2]);
     rotMat.rows[0][0] = ch*cb+sh*sp*sb;
-    rotMat.rows[0][1] = sb*cp;
-    rotMat.rows[0][2] = -sh*cb+ch*sp*sb;
-    rotMat.rows[1][0] = -ch*sb+sh*sp*cb;
+    rotMat.rows[0][1] = -ch*sb+sh*sp*cb;
+    rotMat.rows[0][2] = sh*cp;
+    rotMat.rows[1][0] = sb*cp;
     rotMat.rows[1][1] = cb*cp;
-    rotMat.rows[1][2] = sb*sh+ch*sp*cb;
-    rotMat.rows[2][0] = sh*cp;
-    rotMat.rows[2][1] = -sp;
+    rotMat.rows[1][2] = -sp;
+    rotMat.rows[2][0] = -sh*cb+ch*sp*sb;
+    rotMat.rows[2][1] = sb*sh+ch*sp*cb;
     rotMat.rows[2][2] = ch*cp;
     return rotMat;
 }
@@ -144,13 +144,13 @@ mat4f GMathUtils::TRS(vec3f &translate, vec3f &rotation, vec3f &scale)
 {
     mat4f ret;
     ret.identity();
-    ret[0][3] = translate[0];
-    ret[1][3] = translate[1];
-    ret[2][3] = translate[2];
-    ret = EulerAngleToRotationMatrix(rotation) * ret;
     ret[0][0] *= scale[0];
     ret[1][1] *= scale[1];
     ret[2][2] *= scale[2];
+    ret = EulerAngleToRotationMatrix(rotation) * ret;
+    ret[0][3] = translate[0];
+    ret[1][3] = translate[1];
+    ret[2][3] = translate[2];
     return ret;
 }
 

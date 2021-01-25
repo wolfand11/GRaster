@@ -11,6 +11,7 @@ using namespace GMath;
 
 GFrameBuffer* frameBuffer;
 GColorBuffer* colorBuffer;
+GDepthStencilBuffer* depthBuffer;
 GDataBuffer*  arrayBuffer; // geometry
 GVertexAttribInfoObject* vao;
 GShader* shader;
@@ -59,13 +60,15 @@ GRaster::GRaster(QWidget *parent) :
     ui->rotationZLineEdit->setValidator(new QDoubleValidator(this));
     ui->fovLineEdit->setValidator(new QDoubleValidator(this));
     RefreshUI();
-    connect(ui->poxXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->poxYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->poxZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->rotationXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->rotationYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->rotationZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
-    connect(ui->fovLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_cameraProp_changed(const QString&)));
+    connect(ui->poxXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->poxYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->poxZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->rotationXLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->rotationYLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->rotationZLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->fovLineEdit, SIGNAL(textChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->fillModeCB, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(on_drawProp_changed()));
+    connect(ui->cullModeCB, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(on_drawProp_changed()));
 }
 
 GRaster::~GRaster()
@@ -86,6 +89,14 @@ void GRaster::closeEvent(QCloseEvent *event)
     hasDrawTask.notify_one();
 }
 
+void GRaster::mousePressEvent(QMouseEvent *event)
+{
+    int x = event->x() - ui->canvas->x();
+    int y = GUtils::screenHeight - (event->y() - ui->canvas->y());
+    prePressedPos.setX(x);
+    prePressedPos.setY(y);
+}
+
 void GRaster::CreateScene()
 {
     // light
@@ -99,16 +110,28 @@ void GRaster::CreateScene()
     cameras.push_back(cameraGObj);
 
     // models
-    //models.push_back(GGameObject::CreateModelGObj(GModelType::kMTCube));
-    models.push_back(GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj")));
+    // triangle
+    //models.push_back(GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("obj/triangle.obj")));
+    // cube
+    auto cubeGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/cube.obj"));
+    cubeGObj.SetR(vec3f(-25,0.0f,0.0f));
+    models.push_back(cubeGObj);
+    // floor
+    auto floorGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj"));
+    //floorGObj.SetT(vec3f(0,1,0));
+    //floorGObj.SetR(vec3f(45,0,0));
+    models.push_back(floorGObj);
+    // diablo
     auto diablo3GObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/diablo3_pose/diablo3_pose.obj"));
     diablo3GObj.SetT(vec3f(0,0,0));
-    models.push_back(diablo3GObj);
+    //models.push_back(diablo3GObj);
+    // sphere
     auto sphereGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/sphere.obj"));
     sphereGObj.SetT(vec3f(0,0,-0.9));
     //models.push_back(sphereGObj);
-
-    //models.push_back(GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("obj/triangle.obj")));
+    // african head
+    auto africanHeadGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/african_head/african_head.obj"));
+    //models.push_back(africanHeadGObj);
 
     for(auto& model: models)
     {
@@ -127,8 +150,12 @@ void GRaster::SetupGRaster()
     GLAPI->AttachRenderBufferToFrameBuffer(frameBuffer, colorBuffer, GRenderBufferType::kRBFront);
     GLAPI->DrawRenderBuffer({GRenderBufferType::kRBFront});
     GLAPI->Clear(GColor::black);
+    depthBuffer = GLAPI->GenDepthStencilBuffer(GUtils::screenWidth, GUtils::screenHeight);
+    GLAPI->AttachRenderBufferToFrameBuffer(frameBuffer, depthBuffer);
+    GLAPI->ClearDepth(1.0f);
     // obj vertex is CounterClockwise
     GLAPI->SetFrontFace(GFrontFace::kCounterClockwise);
+    GLAPI->SetCullFace(GCullFaceType::kFTBack);
 }
 
 void GRaster::RefreshUI()
@@ -143,6 +170,9 @@ void GRaster::RefreshUI()
     ui->rotationYLineEdit->setText(QString("%1").arg(mainCamera->rotation().y()));
     ui->rotationZLineEdit->setText(QString("%1").arg(mainCamera->rotation().z()));
     ui->fovLineEdit->setText(QString("%1").arg(mainCamera->fov));
+    ui->fillModeCB->setCurrentIndex((int)GLAPI->activePolygonMode);
+    ui->depthBModeCB->setCurrentIndex(GLAPI->enableWBuffer ? 1 : 0);
+    ui->cullModeCB->setCurrentIndex((int)GLAPI->cullFaceType);
 }
 
 void GRaster::OnPreDraw()
@@ -172,7 +202,7 @@ void GRaster::on_doDrawBtn_clicked()
     DoDraw();
 }
 
-void GRaster::on_cameraProp_changed(const QString& text)
+void GRaster::on_drawProp_changed()
 {
     GLog::LogInfo("trs changed!");
 
@@ -189,7 +219,10 @@ void GRaster::on_cameraProp_changed(const QString& text)
     rot.SetY(ui->rotationYLineEdit->text().toFloat());
     rot.SetZ(ui->rotationZLineEdit->text().toFloat());
     mainCamera->SetR(rot);
-    mainCamera->fov = ui->fovLineEdit->text().toFloat();
+    mainCamera->SetFov(ui->fovLineEdit->text().toFloat());
+    GLAPI->activePolygonMode = (GPolygonMode)(ui->fillModeCB->currentIndex());
+    GLAPI->enableWBuffer = ui->depthBModeCB->currentIndex()==1;
+    GLAPI->cullFaceType = (GCullFaceType)ui->cullModeCB->currentIndex();
 }
 
 void GRaster::_update()
@@ -201,7 +234,7 @@ void GRaster::_update()
         OnPostDraw();
         if(timeCounter!=0)
         {
-            msgLabel->setText(QString("rendering completed. cost %1 seconds!").arg(timeCounter));
+            msgLabel->setText(QString("rendering completed. cost %1 seconds! previous pressed pos = %2,%3").arg(timeCounter).arg(prePressedPos.x()).arg(prePressedPos.y()));
             ui->statusBar->addWidget(msgLabel);
         }
     }
@@ -235,6 +268,7 @@ void GRaster::DoRendering()
         }
 
         GLAPI->Clear(GColor::black);
+        GLAPI->ClearDepth(1.0f);
         for(auto& camera : cameras)
         {
             GGameObject::activeCamera = &camera;

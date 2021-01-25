@@ -121,7 +121,7 @@ struct IShader
     GShaderAppDataType appdataType;
 
     // status
-    GFaceType cullFaceType;
+    GCullFaceType cullFaceType;
     bool useEarlyPerFragementTest;
 };
 
@@ -136,7 +136,7 @@ struct GShader : public IShader
     GShader():IShader(GShaderAppDataType::kSADTDefault)
     {
         useEarlyPerFragementTest = true;
-        cullFaceType = GFaceType::kFTBack;
+        cullFaceType = GCullFaceType::kFTBack;
     }
 
     // uniform attribute

@@ -131,8 +131,10 @@ public:
     std::vector<GColorBuffer*> drawRenderBuffers;
 
     void AttachRenderBuffer(GColorBuffer* colorbuffer, int index);
+    void AttachRenderBuffer(GDepthStencilBuffer* depthStencilBuffer, bool isDepth=true);
     void ClearRenderBuffer(int index, GColor clearColor);
-    void ClearRenderBuffer(int clearValue, bool isDepthBuffer=true);
+    void ClearDepthBuffer(float clearDepthValue);
+    void ClearStencilBuffer(int clearValue);
     void DrawRenderBuffer(std::initializer_list<GRenderBufferType> renderBufferTypes);
     std::vector<GRenderBufferType> drawRenderBufferTypes;
     GColorBuffer* GetRenderBufer(GRenderBufferType renderBufferType);
@@ -147,11 +149,12 @@ public:
     bool IsScissorTestEnabled(GRenderBufferType renderBufferType);
     bool IsScissorTestEnabled(GRenderBuffer* renderBuffer);
     void SetEnableScissorTest(GRenderBufferType renderBufferType, bool enable=true);
+
+    GDepthStencilBuffer* depthBuffer;
+    GDepthStencilBuffer* stencilBuffer;
 private:
     bool CheckRenderBufferSizeValid();
     GColorBuffer* colorBuffer[MAX_COLORBUFF_COUNT];
-    GDepthStencilBuffer* depthBuffer;
-    GDepthStencilBuffer* stencilBuffer;
     std::vector<std::tuple<bool, GRenderBufferType>> enableBlend;
     std::vector<std::tuple<bool, GRenderBufferType>> enableScissorTest;
 };
@@ -246,7 +249,7 @@ public:
         }
         data = nullptr;
     }
-    void Clear(int depth)
+    void Clear(unsigned int depth=~0)
     {
         for(int i=0; i<width; i++)
         {
@@ -254,23 +257,46 @@ public:
             SetValue(i, j, depth);
         }
     }
-    void SetValue(int x, int y, int depth)
+    void ClearF(float depth=1.0f)
+    {
+        Clear(DepthFToUInt(depth));
+    }
+    void SetValue(int x, int y, unsigned int depth)
     {
         if(!CheckRangeValid(x,y)) return;
 
         BUFFER_ZERO_COORD_AT_LEFT_BOTTOM;
         depthStencilData()[y*width+x] = depth;
     }
-
-    int GetValue(int x, int y)
+    void SetFValue(int x, int y, float depth)
+    {
+        SetValue(x, y, DepthFToUInt(depth));
+    }
+    unsigned int GetValue(int x, int y)
     {
         if(!CheckRangeValid(x,y)) return 1;
         return depthStencilData()[y*width+x];
     }
-private:
-    int* depthStencilData()
+    float GetFValue(int x, int y)
     {
-        return (int*)data;
+        unsigned int ivalue = GetValue(x, y);
+        return DepthUIntToF(ivalue);
+    }
+private:
+    unsigned int DepthFToUInt(float fdepth)
+    {
+        fdepth = std::max(std::min(fdepth, 1.0f), -1.0f);
+        unsigned int idepth = (fdepth + 1.0) * 0.5 * UINT_MAX;
+        return idepth;
+    }
+    float DepthUIntToF(unsigned int idepth)
+    {
+        float fvalue = (double)idepth / UINT_MAX * 2.0 - 1.0;
+        return fvalue;
+    }
+    unsigned int* depthStencilData()
+    {
+        return (unsigned int*)data;
     }
 };
 

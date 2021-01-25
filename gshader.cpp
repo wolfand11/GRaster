@@ -60,7 +60,7 @@ vec4 GShader::vertex(GGraphicLibAPI *GLAPI, S_abs_appdata *vert_in, int vertIdx)
     S_appdata* appdata = (S_appdata*) vert_in;
     GMath::vec4 wPos = GMath::embed<double,4>(appdata->vert, 1);
     wPos = (mat4)obj2World * wPos;
-    v2f_data_arr[vertIdx].wPos = proj<double, 3>(wPos/wPos.w());
+    v2f_data_arr[vertIdx].wPos = proj<double, 3>(wPos);
     v2f_data_arr[vertIdx].wNormal = (mat3)(world2Obj.get_minor(3,3).transpose()) * appdata->normal;
     wPos = (mat4)world2View * wPos;
     v2f_data_arr[vertIdx].gl_position = (mat4)projMat * wPos;
@@ -97,7 +97,8 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out)
 {
     S_v2f& v2f = (S_v2f&)frag_in;
     vec4 col;
-    vec4 diffColor = GColor::ToFloatColor(GUtils::SampleImage(diffusemap_,v2f.uv));
+    //vec4 diffColor = GColor::ToFloatColor(GUtils::SampleImage(diffusemap_,v2f.uv));
+    vec4 diffColor = GColor::ToFloatColor(GColor::white);
     double alpha = diffColor.w();
     float NoL = 0;
     v2f.wNormal.normalize();

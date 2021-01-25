@@ -60,6 +60,13 @@ GColorBuffer *GGraphicLibAPI::GenRenderBuffer(int width, int height)
     return buffer;
 }
 
+GDepthStencilBuffer *GGraphicLibAPI::GenDepthStencilBuffer(int width, int height)
+{
+    auto buffer = new GDepthStencilBuffer(width, height);
+    __renderBufferSet.insert(buffer);
+    return buffer;
+}
+
 void GGraphicLibAPI::BindRenderBuffer(GColorBuffer *buffer)
 {
     activeColorBuffer = buffer;
@@ -77,6 +84,11 @@ void GGraphicLibAPI::AttachRenderBufferToFrameBuffer(GFrameBuffer *framebuffer, 
     framebuffer->AttachRenderBuffer(colorbuffer, attachIndex);
 }
 
+void GGraphicLibAPI::AttachRenderBufferToFrameBuffer(GFrameBuffer *framebuffer, GDepthStencilBuffer *depthStencilBuffer, bool isDepth)
+{
+    framebuffer->AttachRenderBuffer(depthStencilBuffer, isDepth);
+}
+
 void GGraphicLibAPI::Clear(GColor clearColor)
 {
     for(auto rbt : activeFramebuffer->drawRenderBufferTypes)
@@ -84,6 +96,11 @@ void GGraphicLibAPI::Clear(GColor clearColor)
         auto rb = activeFramebuffer->GetRenderBufer(rbt);
         rb->Clear(clearColor);
     }
+}
+
+void GGraphicLibAPI::ClearDepth(float clearValue)
+{
+    activeFramebuffer->ClearDepthBuffer(clearValue);
 }
 
 void GGraphicLibAPI::ClearBuffer(int drawBuffer, GColor clearColor)
@@ -106,7 +123,7 @@ void GGraphicLibAPI::SetFrontFace(GFrontFace frontFace)
     currentFrontFace = frontFace;
 }
 
-void GGraphicLibAPI::SetCullFace(GFaceType faceType)
+void GGraphicLibAPI::SetCullFace(GCullFaceType faceType)
 {
     cullFaceType = faceType;
 }

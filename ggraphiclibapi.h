@@ -17,24 +17,26 @@ public:
     void DeleteFrameBuffer(GFrameBuffer*& framebuffer);
 
     GColorBuffer* GenRenderBuffer(int width, int height);
+    GDepthStencilBuffer* GenDepthStencilBuffer(int width, int height);
     void BindRenderBuffer(GColorBuffer* buffer);
     void DeleteRenderBuffer(GRenderBuffer*& renderbuffer);
 
     void AttachRenderBufferToFrameBuffer(GFrameBuffer* framebuffer, GColorBuffer* colorbuffer, int attachIndex);
+    void AttachRenderBufferToFrameBuffer(GFrameBuffer* framebuffer, GDepthStencilBuffer* depthStencilBuffer, bool isDepth=true);
     // Clear Color Buffer
     void Clear(GColor clearColor);
-    void ClearDepth(int clearValue);
+    void ClearDepth(float clearValue);
     void ClearStencil(int clearValue);
     // Clear Depth Stencil
     void ClearBuffer(int drawBuffer, GColor clearColor);
-    void ClearDepthBuffer(GRenderBufferType renderBufferType, int clearValue);
+    void ClearDepthBuffer(GRenderBufferType renderBufferType, float clearValue);
     void ClearStencilBuffer(GRenderBufferType renderBufferType, int clearValue);
     // Select Draw Buffer
     void DrawRenderBuffer(GRenderBufferType renderBufferType);
     void DrawRenderBuffer(std::initializer_list<GRenderBufferType> renderBufferTypes);
 
     void SetFrontFace(GFrontFace frontFace);
-    void SetCullFace(GFaceType faceType);
+    void SetCullFace(GCullFaceType faceType);
 
     // Enable Disable Capability
     void SetEnableCullFace(bool enable=true);
@@ -73,8 +75,9 @@ public:
     GPrimitiveType activePrimitiveType;
 
     GFrontFace currentFrontFace;
-    GFaceType cullFaceType;
+    GCullFaceType cullFaceType;
     bool enableCullFace;
+    bool enableWBuffer;
 
     GVertexAttribInfoObject* activeVertexAttriInfoObject;
     GShader* activeShader;
