@@ -5,7 +5,6 @@
 #include "gutils.h"
 using namespace GMath;
 
-// https://github.com/ssloy/tinyrenderer/wiki
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);

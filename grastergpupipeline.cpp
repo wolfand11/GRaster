@@ -308,123 +308,6 @@ void GRasterGPUPipeline::RasterLine(int x0, int y0, int x1, int y1, GGraphicLibA
     }
 }
 
-void GRasterGPUPipeline::DrawLine(int x0, int y0, int x1, int y1, GColor color, std::vector<GColorBuffer *>& colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
-{
-    __DrawLine(x0, y0, x1, y1, color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-}
-
-void GRasterGPUPipeline::DrawTriangle(GMath::vec2i t0, GMath::vec2i t1, GMath::vec2i t2, GColor color, std::vector<GColorBuffer *>& colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
-{
-    __DrawTriangleV2(t0,t1,t2,color,colorBuffers,depthBuffer,stencilBuffer,shader, mode);
-}
-
-void GRasterGPUPipeline::__DrawLine(int x0, int y0, int x1, int y1, GColor color, std::vector<GColorBuffer *>& colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
-{
-    int xStep = 1;
-    if(mode == GPolygonMode::kPMPoint)
-    {
-        xStep = 2;
-    }
-
-    float xDelta = x1-x0;
-    float yDelta = y1-y0;
-    bool yDeltaBigger = abs(yDelta) > abs(xDelta);
-    if(yDeltaBigger)
-    {
-        // make x always bigger than y
-        std::swap(x0,y0);
-        std::swap(x1,y1);
-        std::swap(xDelta, yDelta);
-    }
-    if(xDelta<0)
-    {
-        std::swap(x0, x1);
-        std::swap(y0, y1);
-        xDelta = -xDelta;
-        yDelta = -yDelta;
-    }
-
-    float error = 0.0f;
-    float errorStep = abs(yDelta)*xStep;
-    for(int i=x0,j=y0; i<=x1; i+=xStep)
-    {
-        if(yDeltaBigger)
-        {
-            __SetColorBufferArrColor(colorBuffers, j, i, color);
-        }
-        else
-        {
-            __SetColorBufferArrColor(colorBuffers, i, j, color);
-        }
-        error += errorStep;
-        if(error >= xDelta*xStep)
-        {
-            j += yDelta>0 ? xStep : -xStep;
-            error -= xDelta*xStep;
-        }
-    }
-}
-
-void GRasterGPUPipeline::__DrawTriangleV1(GMath::vec2i t0, GMath::vec2i t1, GMath::vec2i t2, GColor color, std::vector<GColorBuffer *>& colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
-{
-    if(mode == GPolygonMode::kPMPoint || mode==GPolygonMode::kPMLine)
-    {
-        __DrawLine(t0[0], t0[1], t1[0], t1[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-        __DrawLine(t1[0], t1[1], t2[0], t2[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-        __DrawLine(t2[0], t2[1], t0[0], t0[1], color, colorBuffers, depthBuffer, stencilBuffer, shader, mode);
-        return;
-    }
-
-    if(t0[1] > t1[1]) swap(t0, t1);
-    if(t0[1] > t2[1]) swap(t0, t2);
-    if(t1[1] > t2[1]) swap(t1, t2);
-    int total_h = t2[1]-t0[1];
-    int t1_t0_h = t1[1]-t0[1];
-    for(int y=0; y<total_h; y++)
-    {
-        bool drawPart2 = (y>(t1[1]-t0[1]));
-        float partH = drawPart2 ? t2[1]-t1[1] : t1_t0_h;
-        float alpha = drawPart2 ? (y-t1_t0_h) : y;
-        alpha = alpha / partH;
-        float beta = (float)y/total_h;
-
-        vec2i A = drawPart2 ? t1+alpha*(t2 - t1) : t0+alpha*(t1 - t0);
-        vec2i B = t0 + beta*(t2-t0);
-
-        if(A[0]>B[0]) swap(A,B);
-        for(int x=A[0]; x<=B[0]; x++)
-        {
-            __SetColorBufferArrColor(colorBuffers,x, t0[1]+y, color);
-        }
-    }
-}
-
-void GRasterGPUPipeline::__DrawTriangleV2(vec2i t0, vec2i t1, vec2i t2, GColor color, std::vector<GColorBuffer *> &colorBuffers, GDepthStencilBuffer *depthBuffer, GDepthStencilBuffer *stencilBuffer, GShader *shader, GPolygonMode mode)
-{
-    vec2i vertex_arr[] = {t0, t1, t2};
-    vec2i bboxmin(colorBuffers[0]->width-1, colorBuffers[0]->height-1);
-    vec2i bboxmax(0, 0);
-    vec2i max_boundary(colorBuffers[0]->width-1, colorBuffers[0]->height-1);
-    for(int i=0; i<3; i++)
-    {
-        for(int j=0; j<2; j++)
-        {
-            bboxmin[j] = max(0,               min(vertex_arr[i][j], bboxmin[j]));
-            bboxmax[j] = min(max_boundary[j], max(vertex_arr[i][j], bboxmax[j]));
-        }
-    }
-    vec2i p;
-    for(p[0]=bboxmin[0]; p[0]<=bboxmax[0]; p[0]++)
-    {
-        for(p[1]=bboxmin[1]; p[1]<=bboxmax[1]; p[1]++)
-        {
-            vec3 p_bcpos = __Barycentric(t0, t1, t2, p);
-            if(p_bcpos[0]<0 || p_bcpos[1]<0 || p_bcpos[2]<0) continue;
-            __SetColorBufferArrColor(colorBuffers, p[0], p[1], color);
-        }
-    }
-}
-
 void GRasterGPUPipeline::__SetColorBufferArrColor(const std::vector<GColorBuffer *> &colorBuffers, int i, int j, GColor color)
 {
     for(auto cb : colorBuffers)
@@ -432,7 +315,6 @@ void GRasterGPUPipeline::__SetColorBufferArrColor(const std::vector<GColorBuffer
         cb->SetColor(i, j, color);
     }
 }
-
 vec3 GRasterGPUPipeline::__Barycentric(vec2i t0, vec2i t1, vec2i t2, vec2i p)
 {
     vec3 barycentric = cross(vec3(t1[0]-t0[0],t2[0]-t0[0], t0[0]-p[0]), vec3(t1[1]-t0[1],t2[1]-t0[1], t0[1]-p[1]));
