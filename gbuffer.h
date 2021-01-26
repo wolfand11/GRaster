@@ -159,8 +159,6 @@ private:
     std::vector<std::tuple<bool, GRenderBufferType>> enableScissorTest;
 };
 
-#define BUFFER_ZERO_COORD_AT_LEFT_BOTTOM \
-    y = height - y - 1; \
 
 class GColorBuffer : public GRenderBuffer
 {
@@ -203,7 +201,6 @@ public:
     void SetColor(int x, int y, GColor color)
     {
         if(!CheckRangeValid(x,y)) return;
-        BUFFER_ZERO_COORD_AT_LEFT_BOTTOM;
         colorData()[y*width+x] = color;
     }
 
@@ -265,7 +262,6 @@ public:
     {
         if(!CheckRangeValid(x,y)) return;
 
-        BUFFER_ZERO_COORD_AT_LEFT_BOTTOM;
         depthStencilData()[y*width+x] = depth;
     }
     void SetFValue(int x, int y, float depth)

@@ -97,8 +97,8 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out)
 {
     S_v2f& v2f = (S_v2f&)frag_in;
     vec4 col;
-    //vec4 diffColor = GColor::ToFloatColor(GUtils::SampleImage(diffusemap_,v2f.uv));
-    vec4 diffColor = GColor::ToFloatColor(GColor::white);
+    vec4 diffColor = GColor::ToFloatColor(GUtils::SampleImage(diffusemap_,v2f.uv));
+    //vec4 diffColor = GColor::ToFloatColor(GColor::white);
     double alpha = diffColor.w();
     float NoL = 0;
     v2f.wNormal.normalize();
@@ -111,6 +111,7 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out)
         }
         vec4 lightColor = GColor::ToFloatColor(light->lightColor) * light->lightIntensity;
         col = (diffColor * lightColor) * NoL;
+        //col = (diffColor * lightColor);
     }
 
     col.SetW(alpha);

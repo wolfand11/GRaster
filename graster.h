@@ -53,7 +53,7 @@ private:
     std::vector<GGameObject> models;
 
     QVector2D prePressedPos{0,0};
-    int timeCounter;
+    int timeCounter{0};
     bool isNeedExist;
     bool isRenderingCompleted;
     void DoRendering();

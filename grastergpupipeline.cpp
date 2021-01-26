@@ -42,7 +42,7 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
             vec3 triangleSurfaceNormal;
             if(GLAPI->currentFrontFace==GFrontFace::kClockwise)
             {
-                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0],0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0], 0));
+                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0],0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0], 0)).inverse();
             }
             else if(GLAPI->currentFrontFace==GFrontFace::kCounterClockwise)
             {
@@ -90,6 +90,8 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
 
 void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos, GGraphicLibAPI *GLAPI)
 {
+    int debugPosX = 550;
+    int debugPosY = 202;
     const std::vector<GColorBuffer*>& drawRenderBuffers = GLAPI->activeFramebuffer->GetDrawRenderBuffer();
     vec2i bufferSize = GLAPI->activeFramebuffer->GetSize();
     vec2i bboxmin = vec2i(bufferSize[0]-1,bufferSize[1]-1);
@@ -139,6 +141,10 @@ void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos
     {
         for(screenPos.SetY(bboxmin.y()); screenPos.y()<=bboxmax.y(); screenPos.SetY(screenPos.y()+2))
         {
+            if(screenPos.x()>=debugPosX && screenPos.y()>=debugPosY)
+            {
+                GLog::LogInfo("");
+            }
             fragScreenPos[0] = screenPos;
             fragScreenPos[1] = screenPos+vec2i(1,0);
             fragScreenPos[2] = screenPos+vec2i(0,1);
@@ -210,7 +216,10 @@ void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos
 
                 // merge: scissor test --> alpha to coverage op --> stencil test --> depth test --> blending --> dithering --> logic op --> addition multisample fragment op --> write to framebuffer
                 // depth test
-                if(!ZDepthTest(GLAPI, fragScreenPos, interpolationData, fragNeedRendering, fragIdx)) continue;
+                if(!GLAPI->activeShader->useEarlyPerFragementTest)
+                {
+                    if(!ZDepthTest(GLAPI, fragScreenPos, interpolationData, fragNeedRendering, fragIdx)) continue;
+                }
                 for(size_t outColorIdx=0; outColorIdx<fout.colors.size(); outColorIdx++)
                 {
                     GColorBuffer* drawRenderBuffer = drawRenderBuffers[outColorIdx];
@@ -236,7 +245,7 @@ bool GRasterGPUPipeline::ZDepthTest(GGraphicLibAPI *GLAPI, vec2i* fragScreenPos,
     float srcDepth = 0;
     if(GLAPI->enableWBuffer)
     {
-        srcDepth = GGameObject::activeCamera->ToWBufferValue(interpolationData[fragIdx]->ndc().w());
+        srcDepth = GGameObject::activeCamera->ToWBufferValue(interpolationData[fragIdx]->gl_position.w());
     }
     else
     {

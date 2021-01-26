@@ -23,7 +23,8 @@ static void CopyColorBufferToImage(GColorBuffer* colorBuffer, QImage* image)
     {
         for(int j=0; j<colorBuffer->width; j++)
         {
-            GColor color = colorBuffer->GetColor(i, j);
+            // image origin is top left corner
+            GColor color = colorBuffer->GetColor(i, colorBuffer->height - j - 1);
             image->setPixelColor(i, j, QColor(color.r,color.g,color.b,color.a));
         }
     }
@@ -104,18 +105,19 @@ void GRaster::CreateScene()
     lightGObj.SetR(vec3f(50,-50,0));
 
     // camera
-    GGameObject cameraGObj = GGameObject::CreateProjCamera(1, 2000, 90);
-    cameraGObj.LookAt(vec3f(0,0,-2), vec3f(0,0,0), vec3f(0,1,0));
+    GGameObject cameraGObj = GGameObject::CreateProjCamera(1, 2000, 60);
+    cameraGObj.LookAt(vec3f(0,0,-3), vec3f(0,0,0), vec3f(0,1,0));
     cameraGObj.SetViewport(0, 0, GUtils::screenWidth, GUtils::screenHeight);
     cameras.push_back(cameraGObj);
 
     // models
     // triangle
-    //models.push_back(GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("obj/triangle.obj")));
+    auto triangleGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/triangle.obj"));
+    //models.push_back(triangleGObj);
     // cube
     auto cubeGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/cube.obj"));
     cubeGObj.SetR(vec3f(-25,0.0f,0.0f));
-    models.push_back(cubeGObj);
+    //models.push_back(cubeGObj);
     // floor
     auto floorGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj"));
     //floorGObj.SetT(vec3f(0,1,0));
@@ -123,8 +125,8 @@ void GRaster::CreateScene()
     models.push_back(floorGObj);
     // diablo
     auto diablo3GObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/diablo3_pose/diablo3_pose.obj"));
-    diablo3GObj.SetT(vec3f(0,0,0));
-    //models.push_back(diablo3GObj);
+    diablo3GObj.SetR(vec3f(0,180,0));
+    models.push_back(diablo3GObj);
     // sphere
     auto sphereGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/sphere.obj"));
     sphereGObj.SetT(vec3f(0,0,-0.9));
@@ -153,8 +155,8 @@ void GRaster::SetupGRaster()
     depthBuffer = GLAPI->GenDepthStencilBuffer(GUtils::screenWidth, GUtils::screenHeight);
     GLAPI->AttachRenderBufferToFrameBuffer(frameBuffer, depthBuffer);
     GLAPI->ClearDepth(1.0f);
-    // obj vertex is CounterClockwise
-    GLAPI->SetFrontFace(GFrontFace::kCounterClockwise);
+    // obj vertex is CounterClockwise, but obj face is Clockwise
+    GLAPI->SetFrontFace(GFrontFace::kClockwise);
     GLAPI->SetCullFace(GCullFaceType::kFTBack);
 }
 
@@ -225,8 +227,10 @@ void GRaster::on_drawProp_changed()
     GLAPI->cullFaceType = (GCullFaceType)ui->cullModeCB->currentIndex();
 }
 
+QString _msg;
 void GRaster::_update()
 {
+    _msg.clear();
     if(isRenderingCompleted)
     {
         this->setEnabled(true);
@@ -234,19 +238,18 @@ void GRaster::_update()
         OnPostDraw();
         if(timeCounter!=0)
         {
-            msgLabel->setText(QString("rendering completed. cost %1 seconds! previous pressed pos = %2,%3").arg(timeCounter).arg(prePressedPos.x()).arg(prePressedPos.y()));
             ui->statusBar->addWidget(msgLabel);
         }
+        _msg = QString::asprintf("rendering completed. cost %d seconds! previous pressed pos = %d,%d", timeCounter,(int)prePressedPos.x(), (int)prePressedPos.y());
     }
     else
     {
-        auto msg = QString().asprintf("waited %d seconds!", timeCounter);
-        modalMsg->SetMsg(msg);
-        msgLabel->setText(msg);
-        ui->statusBar->addWidget(msgLabel);
-
+        _msg = QString::asprintf("waited %d seconds!", timeCounter);
+        modalMsg->SetMsg(_msg);
         timeCounter++;
     }
+    msgLabel->setText(_msg);
+    ui->statusBar->addWidget(msgLabel);
 }
 
 void GRaster::DoRendering()
