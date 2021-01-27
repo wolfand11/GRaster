@@ -188,7 +188,7 @@ vec3 GOBJModel::normal(const int iface, const int nthvert) const {
     return norms_[facet_nrm_[iface*3+nthvert]];
 }
 
-GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel, GMipmapType diff, GMipmapType norm, GMipmapType spec)
+GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel, bool init_texture)
 {
     GGLModel glModel;
     if(objModel==nullptr)
@@ -211,14 +211,22 @@ GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel, GMipmapType diff, GMi
         glModel.index_.push_back(vertIdx);
     }
     glModel.modelFilePath = objModel->modelFilePath;
-    glModel.diff_mipmaptype = diff;
-    glModel.norm_mipmaptype = norm;
-    glModel.spec_mipmaptype = spec;
-
-    load_mipmap(glModel.modelFilePath, "_diffuse", glModel.diffusemap_mipmaps_, diff!=GMipmapType::kMipmapOff?20:1);
-    load_mipmap(glModel.modelFilePath, "_nm_tangent", glModel.normalmap_mipmaps_, norm!=GMipmapType::kMipmapOff?20:1);
-    load_mipmap(glModel.modelFilePath, "_spec", glModel.specularmap_mipmaps_, spec!=GMipmapType::kMipmapOff?20:1);
+    if(init_texture)
+    {
+        glModel.init_texture();
+    }
     return glModel;
+}
+
+void GGLModel::init_texture(GMipmapType diff, GMipmapType norm, GMipmapType spec)
+{
+    diff_mipmaptype = diff;
+    norm_mipmaptype = norm;
+    spec_mipmaptype = spec;
+
+    load_mipmap(modelFilePath, "_diffuse", diffusemap_mipmaps_, diff!=GMipmapType::kMipmapOff?20:1);
+    load_mipmap(modelFilePath, "_nm_tangent", normalmap_mipmaps_, norm!=GMipmapType::kMipmapOff?20:1);
+    load_mipmap(modelFilePath, "_spec", specularmap_mipmaps_, spec!=GMipmapType::kMipmapOff?20:1);
 }
 
 int GGLModel::nverts() const

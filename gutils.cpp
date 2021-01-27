@@ -120,5 +120,5 @@ GColor GUtils::SampleImage(std::vector<TGAImage> *mipmaps, GMath::vec2 uv, int m
     {
         mipmapLevel = mipmaps->size() - 1;
     }
-    return SampleImage(&mipmaps[mipmapLevel], uv, wrapMode);
+    return SampleImage(&(mipmaps->at(mipmapLevel)), uv, wrapMode, defaultColor);
 }

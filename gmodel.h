@@ -44,7 +44,9 @@ public:
 
 struct GGLModel
 {
-    static GGLModel CreateWithObjModel(GOBJModel* objModel, GMipmapType diff=GMipmapType::kMipmapOff, GMipmapType norm=GMipmapType::kMipmapOff, GMipmapType spec=GMipmapType::kMipmapOff);
+    static GGLModel CreateWithObjModel(GOBJModel* objModel, bool init_texture=true);
+    void init_texture(GMipmapType diff=GMipmapType::kMipmapOff, GMipmapType norm=GMipmapType::kMipmapOff, GMipmapType spec=GMipmapType::kMipmapOff);
+
     int nverts() const;
 
     void* verts_p()
@@ -79,11 +81,11 @@ struct GGLModel
     std::vector<GMath::vec2> uv_;
     std::vector<GMath::vec3> norms_;
 
-    GMipmapType diff_mipmaptype;
+    GMipmapType diff_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage> diffusemap_mipmaps_;
-    GMipmapType norm_mipmaptype;
+    GMipmapType norm_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage> normalmap_mipmaps_;
-    GMipmapType spec_mipmaptype;
+    GMipmapType spec_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage> specularmap_mipmaps_;
     std::string modelFilePath;
 

@@ -80,7 +80,7 @@ public:
     GLightInfo lightInfo;
 
     // model
-    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="", GShaderType shaderType=GShaderType::kSTDefault);
+    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="", GShaderType shaderType=GShaderType::kSTDefault, bool init_texture=true);
     void SetupDraw(GGraphicLibAPI* GLAPI);
     void DrawModel(GGraphicLibAPI* GLAPI);
     GShaderType shaderType;

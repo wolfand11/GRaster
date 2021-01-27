@@ -151,11 +151,11 @@ struct GShader : public IShader
     std::vector<GLightInfo*> lights;
 
     std::vector<TGAImage>* diffusemaps_;
-    GMipmapType diff_mipmaptype;
+    GMipmapType diff_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage>* normalmaps_;
-    GMipmapType norm_mipmaptype;
+    GMipmapType norm_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage>* specularmaps_;
-    GMipmapType spec_mipmaptype;
+    GMipmapType spec_mipmaptype{GMipmapType::kMipmapOff};
 
     S_abs_v2f* GetV2f(int idx)
     {

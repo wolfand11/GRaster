@@ -119,14 +119,15 @@ void GRaster::CreateScene()
     cubeGObj.SetR(vec3f(-25,0.0f,0.0f));
     //models.push_back(cubeGObj);
     // floor
-    auto floorGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj"));
+    auto floorGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj"), GShaderType::kSTDefault, false);
+    floorGObj.model.init_texture(GMipmapType::kMipmapAnisotropy);
     //floorGObj.SetT(vec3f(0,1,0));
     //floorGObj.SetR(vec3f(45,0,0));
     models.push_back(floorGObj);
     // diablo
     auto diablo3GObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/diablo3_pose/diablo3_pose.obj"));
     diablo3GObj.SetR(vec3f(0,180,0));
-    models.push_back(diablo3GObj);
+    //models.push_back(diablo3GObj);
     // sphere
     auto sphereGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/sphere.obj"));
     sphereGObj.SetT(vec3f(0,0,-0.9));
