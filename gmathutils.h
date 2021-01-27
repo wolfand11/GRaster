@@ -6,6 +6,13 @@ class GMathUtils
 {
 public:
     static int FloatNegativOneToOne2Int32(float src);
+    template<typename T>
+    static T saturate(T v)
+    {
+        v = std::max(std::min(v, (T)1), (T)0);
+        return v;
+    }
+
     // matrix helper
     static GMath::mat4 LookAt(GMath::vec3 eyePos, GMath::vec3 lookAtPoint, GMath::vec3 up);
     static void DecomposeMatrix(const GMath::mat4f& mat, GMath::mat4f& translate, GMath::mat4f& rotation, GMath::mat4f& scale);
@@ -21,6 +28,8 @@ public:
     static GMath::vec3f Deg2Rad(GMath::vec3f degree);
 
     // color helper
+
+    //
 };
 
 #endif // GMATHUTILS_H

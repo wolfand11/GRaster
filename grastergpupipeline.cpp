@@ -35,6 +35,7 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
             vec3 ndc = proj<double,3>(clipPos[j]/clipPos[j].w());
             primitiveScreenPos[j] = GGameObject::activeCamera->NDCPosToScreenPos(ndc);
         }
+        GLAPI->activeShader->calc_tangent(GLAPI);
         // raster
         if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
         {
@@ -212,7 +213,7 @@ void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos
                 if(!fragNeedRendering[fragIdx]) continue;
 
                 S_fout fout;
-                GLAPI->activeShader->fragment(*interpolationData[fragIdx], fout);
+                GLAPI->activeShader->fragment(*interpolationData[fragIdx], fout, fragIdx);
 
                 // merge: scissor test --> alpha to coverage op --> stencil test --> depth test --> blending --> dithering --> logic op --> addition multisample fragment op --> write to framebuffer
                 // depth test

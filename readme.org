@@ -1,4 +1,34 @@
-* README
-* 参考链接
-  - https://github.com/ssloy/tinyrenderer/wiki
-  - https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf
+
+* 惯例
+  - 左手坐标系
+  - 列向量
+  - 模型顶点按照顺时针排列
+  - 画布原点在左上角，最终显示时做了上下颠倒
+
+* 特性说明
+  - 支持 Cull，
+  - 支持 ZBuffer WBuffer，支持 EarlyZ
+  - 支持 LineMode FillMode
+  - 支持 双线性过滤
+  - 支持 AlphaBlend TODO
+  - 支持 Isotropy Mipmap, Anisotropy Mipmap
+  - 支持 Tangent Space Normal Map
+  - 支持 BilinnPhong 光照模型
+  - 支持 PBR 光照模型 TODO
+  - 支持 方向光阴影 TODO
+
+* 结构说明
+  - GRaster              ui 主界面逻辑
+  - GGraphicLibAPI       仿照 OpenGLAPI 封装的 API 接口
+  - GRasterGPUPipeline   实现 GPUPipeline
+  - GBuffer              OpenGL 中 ColorBuffer DepthBuffer FrameBuffer VAO 等对象的实现
+  - GMath                向量和矩阵的实现
+  - GModel               OBJ 格式模型管理
+  - TGAImage             TGA 格式图片管理
+  - GGameObject          Camera Light Model 对象的封装
+  - GShader              对 Shader 的封装
+
+* Tips
+  - 点击画面左下角会显示画面坐标，方便 Debug
+
+* ScreenShot

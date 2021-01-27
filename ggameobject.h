@@ -80,9 +80,10 @@ public:
     GLightInfo lightInfo;
 
     // model
-    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="");
+    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="", GShaderType shaderType=GShaderType::kSTDefault);
     void SetupDraw(GGraphicLibAPI* GLAPI);
     void DrawModel(GGraphicLibAPI* GLAPI);
+    GShaderType shaderType;
     GGLModel model;
     GVertexAttribInfoObject* modelVAO;
     GShader* modelShader;

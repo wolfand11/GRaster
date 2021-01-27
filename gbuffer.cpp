@@ -9,6 +9,8 @@ GColor GColor::red = {255,0,0,255};
 GColor GColor::green = {0,255,0,255};
 GColor GColor::blue = {0,0,255,255};
 GColor GColor::gray = {128,128,128,255};
+GColor GColor::pink = {255,0,255,255};
+GColor GColor::normal = {128,128,255,0};
 
 bool GFrameBuffer::CheckAttachIndexValid(int index)
 {

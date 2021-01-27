@@ -5,6 +5,7 @@
 #include <string>
 #include "tgaimage.h"
 #include "gmath.h"
+#include "ggraphiclibdefine.h"
 
 enum GModelType
 {
@@ -38,13 +39,12 @@ public:
     TGAImage diffusemap_;
     TGAImage normalmap_;
     TGAImage specularmap_;
-    bool is_file_exist(const std::string filepath);
-    void load_texture(const std::string filename, const std::string suffix, TGAImage &img);
+    std::string modelFilePath;
 };
 
 struct GGLModel
 {
-    static GGLModel CreateWithObjModel(GOBJModel* objModel);
+    static GGLModel CreateWithObjModel(GOBJModel* objModel, GMipmapType diff=GMipmapType::kMipmapOff, GMipmapType norm=GMipmapType::kMipmapOff, GMipmapType spec=GMipmapType::kMipmapOff);
     int nverts() const;
 
     void* verts_p()
@@ -79,12 +79,16 @@ struct GGLModel
     std::vector<GMath::vec2> uv_;
     std::vector<GMath::vec3> norms_;
 
-    TGAImage diffusemap_;
+    GMipmapType diff_mipmaptype;
     std::vector<TGAImage> diffusemap_mipmaps_;
-    TGAImage normalmap_;
+    GMipmapType norm_mipmaptype;
     std::vector<TGAImage> normalmap_mipmaps_;
-    TGAImage specularmap_;
+    GMipmapType spec_mipmaptype;
     std::vector<TGAImage> specularmap_mipmaps_;
+    std::string modelFilePath;
+
+    static void load_texture(const std::string texfile, TGAImage &img);
+    static void load_mipmap(const std::string& modelFilePath, const std::string suffix, std::vector<TGAImage>& mipmaps, int mipmapMaxLevel);
 };
 
 #endif // GMODEL_H

@@ -21,9 +21,11 @@ public:
 
     static std::string GetProjRootPath();
     static std::string GetAbsPath(const std::string& relativePath);
+    static bool IsFileExist(const std::string filepath);
 
     // sample image
-    static GColor SampleImage(TGAImage* img, GMath::vec2 uv, GTextureWrapMode wrapMode=GTextureWrapMode::kTWMClamp);
+    static GColor SampleImage(TGAImage* img, GMath::vec2 uv, GTextureWrapMode wrapMode=GTextureWrapMode::kTWMClamp, GColor defaultColor=GColor::black);
+    static GColor SampleImage(std::vector<TGAImage>* mipmaps, GMath::vec2 uv, int mipmapLevel, GTextureWrapMode wrapMode=GTextureWrapMode::kTWMClamp, GColor defaultColor=GColor::black);
 };
 
 #endif // GUTILS_H

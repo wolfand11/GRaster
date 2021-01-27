@@ -166,17 +166,18 @@ GGameObject& GGameObject::CreateLightGObj(GLightType lightType, GColor lColor, f
     return lights[lights.size()-1];
 }
 
-GGameObject GGameObject::CreateModelGObj(GModelType modelType, std::string modelPath)
+GGameObject GGameObject::CreateModelGObj(GModelType modelType, std::string modelPath, GShaderType shaderType)
 {
     GGameObject gObj(GGameObjectType::kModel, modelType);
     GOBJModel gObjModel(modelType, modelPath);
     gObj.model = GGLModel::CreateWithObjModel(&gObjModel);
+    gObj.shaderType = shaderType;
     return gObj;
 }
 
 void GGameObject::SetupDraw(GGraphicLibAPI *GLAPI)
 {
-    auto tShader = GLAPI->CreateProgram();
+    auto tShader = GLAPI->CreateProgram(shaderType);
     modelShader = tShader;
     auto tVAO = GLAPI->GenVAO();
     modelVAO = tVAO;
@@ -264,9 +265,10 @@ void GGameObject::DrawModel(GGraphicLibAPI *GLAPI)
     GGameObject::activeCamera->ProjInvertProj(tMat, tInvertMat);
     GLAPI->activeShader->projMat = *tMat;
     GLAPI->activeShader->invertProjMat = *tInvertMat;
-    GLAPI->activeShader->diffusemap_ = &(model.diffusemap_);
-    GLAPI->activeShader->normalmap_ = &(model.normalmap_);
-    GLAPI->activeShader->specularmap_ = &(model.specularmap_);
+    GLAPI->activeShader->wCamPos = GGameObject::activeCamera->position();
+    GLAPI->activeShader->diffusemaps_ = &(model.diffusemap_mipmaps_);
+    GLAPI->activeShader->normalmaps_ = &(model.normalmap_mipmaps_);
+    GLAPI->activeShader->specularmaps_ = &(model.specularmap_mipmaps_);
     FillLightData(GLAPI);
 
     GLAPI->BindVAO(modelVAO);

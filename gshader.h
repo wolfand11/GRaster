@@ -86,9 +86,10 @@ struct S_v2f : public S_abs_v2f
     virtual ~S_v2f(){}
 
     GMath::vec3 wPos;
-    GMath::vec3 wTangent;
     GMath::vec3 wNormal;
+    GMath::vec3 wTangent;
     GMath::vec2 uv;
+    GMath::vec3 normal;
 };
 
 struct S_fout
@@ -104,7 +105,8 @@ struct IShader
 
     virtual ~IShader(){}
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx) = 0;
-    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out) = 0;
+    virtual void calc_tangent(GGraphicLibAPI *GLAPI) = 0;
+    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out, int fragIdx) = 0;
     virtual S_abs_v2f* GetV2f(int idx) = 0;
     virtual S_abs_v2f* interpolation(GGraphicLibAPI* GLAPI, GMath::vec3 lerpFactor, int fragIdx) = 0;
 
@@ -140,6 +142,7 @@ struct GShader : public IShader
     }
 
     // uniform attribute
+    GMath::vec3f wCamPos;
     GMath::mat4f obj2World;
     GMath::mat4f world2Obj;
     GMath::mat4f world2View;
@@ -147,9 +150,12 @@ struct GShader : public IShader
     GMath::mat4f invertProjMat;
     std::vector<GLightInfo*> lights;
 
-    TGAImage* diffusemap_;
-    TGAImage* normalmap_;
-    TGAImage* specularmap_;
+    std::vector<TGAImage>* diffusemaps_;
+    GMipmapType diff_mipmaptype;
+    std::vector<TGAImage>* normalmaps_;
+    GMipmapType norm_mipmaptype;
+    std::vector<TGAImage>* specularmaps_;
+    GMipmapType spec_mipmaptype;
 
     S_abs_v2f* GetV2f(int idx)
     {
@@ -159,9 +165,16 @@ struct GShader : public IShader
     S_v2f v2f_interpolated[4];
 
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx);
+    virtual void calc_tangent(GGraphicLibAPI *GLAPI);
     virtual S_abs_v2f* interpolation(GGraphicLibAPI* GLAPI, GMath::vec3 lerpFactor, int fragIdx);
 
-    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out);
+    virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out, int fragIdx);
+    GColor SampleTex(std::vector<TGAImage>* mipmaps, GMipmapType mipmapType, GMath::vec2f uv, int fragIdx, GColor defaultColor=GColor::black);
+    GMath::vec2f GetPixelCountPerTexel(const TGAImage* mipmap0Tex, int fragIdx);
+};
+
+struct GPBRShader : public GShader
+{
 };
 
 #endif // GSHADER_H

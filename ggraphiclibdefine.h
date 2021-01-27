@@ -64,7 +64,12 @@ enum GDataBufferType
     kUniformBuffer,
 };
 
-
+enum GMipmapType
+{
+    kMipmapOff,
+    kMipmapIsotropy,
+    kMipmapAnisotropy
+};
 
 
 

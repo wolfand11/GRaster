@@ -1,6 +1,7 @@
 #include "gutils.h"
 #include <QCoreApplication>
 #include <QDir>
+#include <sys/stat.h>
 using namespace std;
 
 #define PROJ_NAME "GRaster"
@@ -28,12 +29,30 @@ string GUtils::GetAbsPath(const string &relativePath)
     return GetProjRootPath()+"/"+relativePath;
 }
 
-GColor GUtils::SampleImage(TGAImage *img, GMath::vec2 uv, GTextureWrapMode wrapMode)
+bool GUtils::IsFileExist(const std::string filepath)
+{
+    struct stat s;
+    if(stat(filepath.c_str(), &s) == 0)
+    {
+        if(s.st_mode & S_IFREG)
+        {
+            return true;
+        }
+        else if(s.st_mode & S_IFDIR)
+        {
+            GLog::LogWarning(filepath, " is directory!");
+        }
+    }
+    return false;
+}
+
+
+GColor GUtils::SampleImage(TGAImage *img, GMath::vec2 uv, GTextureWrapMode wrapMode, GColor defaultColor)
 {
     if(img->get_width()<1 || img->get_height()<1)
     {
         GLog::LogError("img w = ", img->get_width(), " h = ", img->get_height());
-        return GColor::gray;
+        return defaultColor;
     }
 
     if(uv.x()>1)
@@ -87,4 +106,19 @@ GColor GUtils::SampleImage(TGAImage *img, GMath::vec2 uv, GTextureWrapMode wrapM
         ret.a = 255;
     }
     return ret;
+}
+
+GColor GUtils::SampleImage(std::vector<TGAImage> *mipmaps, GMath::vec2 uv, int mipmapLevel, GTextureWrapMode wrapMode, GColor defaultColor)
+{
+    if(mipmaps==nullptr)
+    {
+        GLog::LogError("mipmaps == nullptr");
+        return defaultColor;
+    }
+
+    if((size_t)mipmapLevel>=mipmaps->size())
+    {
+        mipmapLevel = mipmaps->size() - 1;
+    }
+    return SampleImage(&mipmaps[mipmapLevel], uv, wrapMode);
 }

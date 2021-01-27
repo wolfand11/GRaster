@@ -146,6 +146,18 @@ GVect<T,n> operator*(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
 }
 
 template <typename T, int n>
+GVect<T,n> operator/(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
+{
+    GVect<T,n> ret = lhs;
+    for(int i=0; i<n; i++)
+    {
+        ret[i] /= rhs[i];
+    }
+    return ret;
+}
+
+
+template <typename T, int n>
 T dot(const GVect<T,n>& lhs, const GVect<T,n>& rhs)
 {
     T ret = 0;

@@ -2,10 +2,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <sys/stat.h>
 #include "glog.h"
+#include "gutils.h"
 using namespace GMath;
-
+using namespace std;
 
 GOBJModel::GOBJModel(GModelType modelType, const std::string filename) : modelType(modelType), verts_(), uv_(), norms_(), facet_vrt_(), facet_tex_(), facet_nrm_(), diffusemap_(), normalmap_(), specularmap_()
 {
@@ -19,6 +19,7 @@ void GOBJModel::Setup(GModelType modelType, const std::string filename)
         GLog::LogError("model is setuped! originType = ", this->modelType, " newSetupType = ", modelType);
         return;
     }
+    modelFilePath = filename;
     this->modelType = modelType;
     switch (modelType)
     {
@@ -146,9 +147,9 @@ void GOBJModel::Setup(GModelType modelType, const std::string filename)
         std::cerr << "# v# " << verts_.size() << " f# "  << nfaces() << " vt# " << uv_.size() << " vn# " << norms_.size() << std::endl;
         break;
     }
-    load_texture(filename, "_diffuse.tga",    diffusemap_);
-    load_texture(filename, "_nm_tangent.tga", normalmap_);
-    load_texture(filename, "_spec.tga",       specularmap_);
+    //load_texture(filename, "_diffuse.tga",    diffusemap_);
+    //load_texture(filename, "_nm_tangent.tga", normalmap_);
+    //load_texture(filename, "_spec.tga",       specularmap_);
 }
 
 int GOBJModel::nfaces() const {
@@ -161,16 +162,6 @@ vec3 GOBJModel::vert(const int i) const {
 
 vec3 GOBJModel::vert(const int iface, const int nthvert) const {
     return verts_[facet_vrt_[iface*3+nthvert]];
-}
-
-void GOBJModel::load_texture(std::string filename, const std::string suffix, TGAImage &img) {
-    size_t dot = filename.find_last_of(".");
-    if (dot==std::string::npos) return;
-    std::string texfile = filename.substr(0,dot) + suffix;
-    if(!is_file_exist(texfile)) return;
-
-    std::cerr << "texture file " << texfile << " loading " << (img.read_tga_file(texfile.c_str()) ? "ok" : "failed") << std::endl;
-    img.flip_vertically();
 }
 
 TGAColor GOBJModel::diffuse(const vec2 &uvf) const {
@@ -189,23 +180,6 @@ double GOBJModel::specular(const vec2 &uvf) const {
     return specularmap_.get(uvf[0]*specularmap_.get_width(), uvf[1]*specularmap_.get_height())[0];
 }
 
-bool GOBJModel::is_file_exist(const std::string filepath)
-{
-    struct stat s;
-    if(stat(filepath.c_str(), &s) == 0)
-    {
-        if(s.st_mode & S_IFREG)
-        {
-            return true;
-        }
-        else if(s.st_mode & S_IFDIR)
-        {
-            GLog::LogWarning(filepath, " is directory!");
-        }
-    }
-    return false;
-}
-
 vec2 GOBJModel::uv(const int iface, const int nthvert) const {
     return uv_[facet_tex_[iface*3+nthvert]];
 }
@@ -214,7 +188,7 @@ vec3 GOBJModel::normal(const int iface, const int nthvert) const {
     return norms_[facet_nrm_[iface*3+nthvert]];
 }
 
-GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel)
+GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel, GMipmapType diff, GMipmapType norm, GMipmapType spec)
 {
     GGLModel glModel;
     if(objModel==nullptr)
@@ -236,13 +210,45 @@ GGLModel GGLModel::CreateWithObjModel(GOBJModel *objModel)
 
         glModel.index_.push_back(vertIdx);
     }
-    glModel.diffusemap_ = objModel->diffusemap_;
-    glModel.normalmap_ = objModel->normalmap_;
-    glModel.specularmap_ = objModel->specularmap_;
+    glModel.modelFilePath = objModel->modelFilePath;
+    glModel.diff_mipmaptype = diff;
+    glModel.norm_mipmaptype = norm;
+    glModel.spec_mipmaptype = spec;
+
+    load_mipmap(glModel.modelFilePath, "_diffuse", glModel.diffusemap_mipmaps_, diff!=GMipmapType::kMipmapOff?20:1);
+    load_mipmap(glModel.modelFilePath, "_nm_tangent", glModel.normalmap_mipmaps_, norm!=GMipmapType::kMipmapOff?20:1);
+    load_mipmap(glModel.modelFilePath, "_spec", glModel.specularmap_mipmaps_, spec!=GMipmapType::kMipmapOff?20:1);
     return glModel;
 }
 
 int GGLModel::nverts() const
 {
     return verts_.size();
+}
+
+void GGLModel::load_texture(std::string texfile, TGAImage &img)
+{
+    std::cerr << "texture file " << texfile << " loading " << (img.read_tga_file(texfile.c_str()) ? "ok" : "failed") << std::endl;
+    img.flip_vertically();
+}
+
+void GGLModel::load_mipmap(const std::string& modelFilePath, const std::string suffix, std::vector<TGAImage> &mipmaps, int mipmapMaxLevel)
+{
+    size_t dot = modelFilePath.find_last_of(".");
+    if (dot==std::string::npos) return;
+    std::string texfilePath = modelFilePath.substr(0,dot) + suffix + "/";
+    for(int i=0; i<mipmapMaxLevel; i++)
+    {
+        string texfile = texfilePath + to_string(i) + ".tga";
+        if(GUtils::IsFileExist(texfile))
+        {
+            TGAImage mipmap;
+            load_texture(texfile, mipmap);
+            mipmaps.push_back(move(mipmap));
+        }
+        else
+        {
+            break;
+        }
+    }
 }
