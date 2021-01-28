@@ -224,14 +224,15 @@ void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos
                 for(size_t outColorIdx=0; outColorIdx<fout.colors.size(); outColorIdx++)
                 {
                     GColorBuffer* drawRenderBuffer = drawRenderBuffers[outColorIdx];
-                    GColor srcColor = GColor::FastTonemap(fout.colors[outColorIdx]);
+                    vec4 srcColor = GColor::FastTonemap(fout.colors[outColorIdx]);
                     // blending
                     if(GLAPI->activeFramebuffer->IsBlendEnabled(drawRenderBuffer))
                     {
-                        GColor desColor = drawRenderBuffer->GetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y());
+                        vec4 desColor = GColor::ToFloat01Color(drawRenderBuffer->GetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y()));
+                        srcColor = srcColor * srcColor.w() + desColor * (1-srcColor.w());
                     }
                     // write to framebuffer
-                    drawRenderBuffer->SetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y(), srcColor);
+                    drawRenderBuffer->SetColor(fragScreenPos[fragIdx].x(), fragScreenPos[fragIdx].y(), GColor::FromFloat01Color(srcColor));
                 }
             }
         }
@@ -258,7 +259,8 @@ bool GRasterGPUPipeline::ZDepthTest(GGraphicLibAPI *GLAPI, vec2i* fragScreenPos,
     }
     else
     {
-        GLAPI->activeFramebuffer->depthBuffer->SetFValue(fragScreenPos[fragIdx].x(),fragScreenPos[fragIdx].y(), srcDepth);
+        if(GLAPI->depthMask)
+            GLAPI->activeFramebuffer->depthBuffer->SetFValue(fragScreenPos[fragIdx].x(),fragScreenPos[fragIdx].y(), srcDepth);
     }
     return fragNeedRendering[fragIdx];
 }

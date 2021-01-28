@@ -78,6 +78,7 @@ public:
     GCullFaceType cullFaceType;
     bool enableCullFace;
     bool enableWBuffer;
+    bool depthMask{true};
 
     GVertexAttribInfoObject* activeVertexAttriInfoObject;
     GShader* activeShader;

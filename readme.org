@@ -10,7 +10,7 @@
   - 支持 ZBuffer WBuffer，支持 EarlyZ
   - 支持 LineMode FillMode
   - 支持 双线性过滤
-  - 支持 AlphaBlend TODO
+  - 支持 AlphaBlend
   - 支持 Isotropy Mipmap, Anisotropy Mipmap
   - 支持 Tangent Space Normal Map
   - 支持 BilinnPhong 光照模型
@@ -32,3 +32,7 @@
   - 点击画面左下角会显示画面坐标，方便 Debug
 
 * ScreenShot
+  下图展示了 WBuffer，AlphaBlend，Anisotropy Mipmap，BilinnPhong 光照模型设置下的渲染结果 cameraPos = (0,0,-3) vs cameraPos = (0,0,-10)：
+  [[./01_alphablend_near.jpg]]
+  [[./01_alphablend_far.jpg]]
+  

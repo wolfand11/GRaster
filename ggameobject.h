@@ -80,13 +80,17 @@ public:
     GLightInfo lightInfo;
 
     // model
-    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="", GShaderType shaderType=GShaderType::kSTDefault, bool init_texture=true);
+    static GGameObject CreateModelGObj(GModelType modelType, std::string modelPath="", bool init_texture=true);
+    typedef std::vector<std::tuple<GRenderBufferType, bool>> BlendConfigT;
+    void InitShader(GGraphicLibAPI* GLAPI, GShaderType shaderType=GShaderType::kSTDefault, BlendConfigT blendConfig={std::make_tuple(GRenderBufferType::kRBFront,false)});
     void SetupDraw(GGraphicLibAPI* GLAPI);
     void DrawModel(GGraphicLibAPI* GLAPI);
     GShaderType shaderType;
+    std::vector<std::tuple<GRenderBufferType, bool>> blendConfig;
     GGLModel model;
     GVertexAttribInfoObject* modelVAO;
-    GShader* modelShader;
+    GShader* modelShader{nullptr};
+    bool depthMask{true};
 
 private:
     // common

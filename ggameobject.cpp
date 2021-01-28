@@ -166,19 +166,28 @@ GGameObject& GGameObject::CreateLightGObj(GLightType lightType, GColor lColor, f
     return lights[lights.size()-1];
 }
 
-GGameObject GGameObject::CreateModelGObj(GModelType modelType, std::string modelPath, GShaderType shaderType, bool init_texture)
+GGameObject GGameObject::CreateModelGObj(GModelType modelType, std::string modelPath, bool init_texture)
 {
     GGameObject gObj(GGameObjectType::kModel, modelType);
     GOBJModel gObjModel(modelType, modelPath);
     gObj.model = GGLModel::CreateWithObjModel(&gObjModel,init_texture);
-    gObj.shaderType = shaderType;
+    gObj.shaderType = GShaderType::kSTDefault;
     return gObj;
+}
+
+void GGameObject::InitShader(GGraphicLibAPI *GLAPI, GShaderType shaderType, BlendConfigT blendConfig)
+{
+    this->shaderType = shaderType;
+    modelShader = GLAPI->CreateProgram(shaderType);
+    this->blendConfig = std::move(blendConfig);
 }
 
 void GGameObject::SetupDraw(GGraphicLibAPI *GLAPI)
 {
-    auto tShader = GLAPI->CreateProgram(shaderType);
-    modelShader = tShader;
+    if(modelShader==nullptr)
+    {
+        InitShader(GLAPI, shaderType);
+    }
     modelShader->diffusemaps_ = &(model.diffusemap_mipmaps_);
     modelShader->diff_mipmaptype = model.diff_mipmaptype;
     modelShader->normalmaps_ = &(model.normalmap_mipmaps_);
@@ -197,7 +206,7 @@ void GGameObject::SetupDraw(GGraphicLibAPI *GLAPI)
     int vertCount = model.nverts();
     int dataSize = 0;
 
-    auto slotInfoArr = tShader->GetSlotInfoArr();
+    auto slotInfoArr = modelShader->GetSlotInfoArr();
     for(auto slotInfo : slotInfoArr)
     {
         switch (slotInfo.slotType)
@@ -259,6 +268,12 @@ void GGameObject::SetupDraw(GGraphicLibAPI *GLAPI)
 void GGameObject::DrawModel(GGraphicLibAPI *GLAPI)
 {
     GLAPI->UseProgram(modelShader);
+    // set draw status
+    for(auto blendInfo : blendConfig)
+    {
+        GLAPI->SetEnableBlend(std::get<0>(blendInfo), std::get<1>(blendInfo));
+    }
+    GLAPI->depthMask = depthMask;
     // set obj uniform variable
     const mat4f* tMat;
     const mat4f* tInvertMat;

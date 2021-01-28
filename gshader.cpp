@@ -117,7 +117,7 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out, int fragIdx)
 {
     S_v2f& v2f = (S_v2f&)frag_in;
     vec4 col;
-    vec4 diffColor = GColor::ToFloat01Color(SampleTex(diffusemaps_, diff_mipmaptype, v2f.uv,fragIdx));
+    vec4 diffColor = GColor::ToFloat01Color(SampleTex(diffusemaps_, diff_mipmaptype, v2f.uv,fragIdx, diffuseColor));
     double alpha = diffColor.w();
     float NoL = 0;
     float HoN = 0;
@@ -171,7 +171,7 @@ GColor GShader::SampleTex(std::vector<TGAImage> *mipmaps, GMipmapType mipmapType
         float maxPixelCount = xDirPixelMore ? pixelCount.x() : pixelCount.y();
         float minPixelCount = xDirPixelMore ? pixelCount.y() : pixelCount.x();
         int sampleRatio = maxPixelCount/minPixelCount + 0.5;
-        int lod = log2f(maxPixelCount/sampleRatio);
+        int lod = std::max(0.0f,log2f(maxPixelCount/sampleRatio));
         TGAImage* curLodImage = &(mipmaps->at(lod));
         vec2f curLodUVStep = vec2f::one / vec2f(curLodImage->get_width(), curLodImage->get_height());
         vec4f texelValue = vec4::zero;

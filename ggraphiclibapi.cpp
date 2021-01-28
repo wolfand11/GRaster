@@ -133,6 +133,11 @@ void GGraphicLibAPI::SetEnableCullFace(bool enable)
     enableCullFace = enable;
 }
 
+void GGraphicLibAPI::SetEnableBlend(GRenderBufferType renderBufferType, bool enable)
+{
+    activeFramebuffer->SetEnableBlend(renderBufferType, enable);
+}
+
 GDataBuffer* GGraphicLibAPI::GenDataBuffer(GDataBufferType bufferType)
 {
     auto buffer = new GDataBuffer(bufferType);

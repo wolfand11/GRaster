@@ -14,6 +14,15 @@ class GDepthStencilBuffer;
 
 struct GColor
 {
+    GColor() = default;
+    GColor(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+    {
+        this->r = r;
+        this->g = g;
+        this->b = b;
+        this->a = a;
+    }
+
     unsigned char r;
     unsigned char g;
     unsigned char b;
@@ -33,13 +42,13 @@ struct GColor
     static GColor pink;
     static GColor normal;
 
-    static GColor FastTonemap(GMath::vec4 color)
+    static GMath::vec4 FastTonemap(GMath::vec4 color)
     {
-        GColor ret;
-        ret.r = (unsigned char)((color[0] * 1.0/(color[0]+1.0))*255);
-        ret.g = (unsigned char)((color[1] * 1.0/(color[1]+1.0))*255);
-        ret.b = (unsigned char)((color[2] * 1.0/(color[2]+1.0))*255);
-        ret.a = (unsigned char)(std::max(0.0, std::min(color[3], 1.0)) * 255);
+        GMath::vec4 ret;
+        ret.SetX((color[0] * 1.0/(color[0]+1.0)));
+        ret.SetY((color[1] * 1.0/(color[1]+1.0)));
+        ret.SetZ((color[2] * 1.0/(color[2]+1.0)));
+        ret.SetW(std::max(0.0, std::min(color[3], 1.0)));
         return ret;
     }
 

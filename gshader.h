@@ -125,6 +125,7 @@ struct IShader
     // status
     GCullFaceType cullFaceType;
     bool useEarlyPerFragementTest;
+    bool useAlphaBlend;
 };
 
 enum GShaderType
@@ -150,6 +151,7 @@ struct GShader : public IShader
     GMath::mat4f invertProjMat;
     std::vector<GLightInfo*> lights;
 
+    GColor diffuseColor{GColor::white};
     std::vector<TGAImage>* diffusemaps_;
     GMipmapType diff_mipmaptype{GMipmapType::kMipmapOff};
     std::vector<TGAImage>* normalmaps_;

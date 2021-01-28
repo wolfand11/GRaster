@@ -32,6 +32,7 @@ SOURCES += \
         gmath.cpp \
         gmathutils.cpp \
         gmodel.cpp \
+        gpbrspecularshader.cpp \
         grastergpupipeline.cpp \
         gshader.cpp \
         gutils.cpp \
@@ -48,6 +49,7 @@ HEADERS += \
         gmath.h \
         gmathutils.h \
         gmodel.h \
+        gpbrspecularshader.h \
         graster.h \
         grastergpupipeline.h \
         gshader.h \
