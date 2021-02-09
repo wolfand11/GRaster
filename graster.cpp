@@ -106,7 +106,7 @@ void GRaster::CreateScene()
 
     // camera
     GGameObject cameraGObj = GGameObject::CreateProjCamera(1, 2000, 60);
-    cameraGObj.LookAt(vec3f(0,0,-3), vec3f(0,0,0), vec3f(0,1,0));
+    cameraGObj.LookAt(vec3f(0,0,-2), vec3f(0,0,0), vec3f(0,1,0));
     cameraGObj.SetViewport(0, 0, GUtils::screenWidth, GUtils::screenHeight);
     cameras.push_back(cameraGObj);
 
@@ -119,7 +119,7 @@ void GRaster::CreateScene()
     // floor
     auto floorGObj = GGameObject::CreateModelGObj(GModelType::kMTObj, GUtils::GetAbsPath("models/floor.obj"), false);
     floorGObj.model.init_texture(GMipmapType::kMipmapAnisotropy);
-    floorGObj.SetS(vec3f(1, 1, 2));
+    //floorGObj.SetS(vec3f(1, 1, 1));
     //floorGObj.SetT(vec3f(0,1,0));
     //floorGObj.SetR(vec3f(45,0,0));
     models.push_back(floorGObj);
@@ -144,7 +144,7 @@ void GRaster::CreateScene()
     triangleGObj.InitShader(GLAPI, GShaderType::kSTDefault, {std::make_tuple(GRenderBufferType::kRBFront, true)});
     triangleGObj.depthMask = false;
     triangleGObj.modelShader->diffuseColor = GColor(255,255,255,100);
-    models.push_back(triangleGObj);
+    //models.push_back(triangleGObj);
 
     for(auto& model: models)
     {

@@ -193,6 +193,17 @@ GVect<T,n> proj(const GVect<T,m>& v)
 }
 
 template <typename T, int n>
+GVect<T,n> lerp(const GVect<T,n>& v0, const GVect<T,n>& v1, float factor)
+{
+    GVect<T,n> ret;
+    for(int i=0; i<n; i++)
+    {
+        ret[i] = v0[i]*(1-factor) + v1[i]*factor;
+    }
+    return ret;
+}
+
+template <typename T, int n>
 std::ostream& operator <<(std::ostream& out, const GVect<T,n>& v)
 {
     for(int i=0; i<n; i++) out << std::to_string(v[i]) << " ";

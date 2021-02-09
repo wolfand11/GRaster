@@ -58,15 +58,126 @@ void S_appdata::SetSlotDatum(int slot, int datumIdx, double value)
 
 vec4 GShader::vertex(GGraphicLibAPI *GLAPI, S_abs_appdata *vert_in, int vertIdx)
 {
+    if(vertIdx == 0) v2f_data_arr_tmp.clear();
+    if((int)v2f_data_arr_tmp.size() <= vertIdx)
+    {
+        v2f_data_arr_tmp.push_back(S_v2f());
+    }
+
     S_appdata* appdata = (S_appdata*) vert_in;
     GMath::vec4 wPos = GMath::embed<double,4>(appdata->vert, 1);
     wPos = (mat4)obj2World * wPos;
-    v2f_data_arr[vertIdx].wPos = proj<double, 3>(wPos);
+    v2f_data_arr_tmp[vertIdx].wPos = proj<double, 3>(wPos);
     wPos = (mat4)world2View * wPos;
-    v2f_data_arr[vertIdx].gl_position = (mat4)projMat * wPos;
-    v2f_data_arr[vertIdx].uv = appdata->uv;
-    v2f_data_arr[vertIdx].normal = appdata->normal;
-    return v2f_data_arr[vertIdx].gl_position;
+    v2f_data_arr_tmp[vertIdx].gl_position = (mat4)projMat * wPos;
+    v2f_data_arr_tmp[vertIdx].uv = appdata->uv;
+    v2f_data_arr_tmp[vertIdx].normal = appdata->normal;
+    return v2f_data_arr_tmp[vertIdx].gl_position;
+}
+
+int GShader::homogenous_clipping(GGraphicLibAPI *GLAPI)
+{
+    int onePrimitiveVertCount = 0;
+    if(GLAPI->activePrimitiveType==GPrimitiveType::kTriangles)
+    {
+        onePrimitiveVertCount = 3;
+    }
+    else if(GLAPI->activePrimitiveType==GPrimitiveType::kLines)
+    {
+        onePrimitiveVertCount = 2;
+    }
+    int vertCount = clip_vertex(onePrimitiveVertCount);
+    return vertCount;
+}
+
+int GShader::clip_vertex(int primitiveCount)
+{
+    std::vector<S_v2f> &vertsIn = v2f_data_arr_tmp;
+    std::vector<S_v2f> &vertsOut = v2f_data_arr;
+    int vertCount = clip_vertex(GFrustumPlaneType::kFPTFront, vertsIn, vertsOut);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTBack, vertsOut, vertsIn);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTLeft, vertsIn, vertsOut);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTRight, vertsOut, vertsIn);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTBottom, vertsIn, vertsOut);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTTop, vertsOut, vertsIn);
+    if(vertCount<primitiveCount)
+    {
+        return vertCount;
+    }
+    vertCount = clip_vertex(GFrustumPlaneType::kFPTW, vertsIn, vertsOut);
+
+    // need generate primitive
+    if(vertCount>primitiveCount)
+    {
+        vertCount = 0;
+        v2f_data_arr_tmp.clear();
+        for(int i=0; i<(int)v2f_data_arr.size()-2; i++)
+        {
+            int idx0 = 0;
+            int idx1 = i + 1;
+            int idx2 = i + 2;
+            v2f_data_arr_tmp.push_back(v2f_data_arr[idx0]);
+            v2f_data_arr_tmp.push_back(v2f_data_arr[idx1]);
+            v2f_data_arr_tmp.push_back(v2f_data_arr[idx2]);
+
+            vertCount += 3;
+        }
+    }
+    return vertCount;
+}
+
+int GShader::clip_vertex(GFrustumPlaneType planeType, std::vector<S_v2f> &vertsIn, std::vector<S_v2f> &vertsOut)
+{
+    vertsOut.clear();
+    for(size_t vertIdx=0; vertIdx<vertsIn.size(); vertIdx++)
+    {
+        size_t preIdx = (vertIdx-1+vertsIn.size()) % vertsIn.size();
+        size_t curIdx = vertIdx;
+
+        vec4 prePos = vertsIn[preIdx].gl_position;
+        vec4 curPos = vertsIn[curIdx].gl_position;
+
+        bool isPreInside = GRasterGPUPipeline::IsInsideFrustumPlane(planeType, prePos);
+        bool isCurInside = GRasterGPUPipeline::IsInsideFrustumPlane(planeType, curPos);
+
+        if(isPreInside != isCurInside)
+        {
+            float lerpFactor = GRasterGPUPipeline::CalcIntersectLerpFactor(planeType, prePos, curPos);
+            S_v2f intersectPoint;
+            intersectPoint.gl_position = lerp(prePos, curPos, lerpFactor);
+            intersectPoint.normal = lerp(vertsIn[preIdx].normal, vertsIn[curIdx].normal, lerpFactor);
+            intersectPoint.uv = lerp(vertsIn[preIdx].uv, vertsIn[curIdx].uv, lerpFactor);
+            intersectPoint.wPos = lerp(vertsIn[preIdx].wPos, vertsIn[curIdx].wPos, lerpFactor);
+
+            vertsOut.push_back(std::move(intersectPoint));
+        }
+
+        if(isCurInside)
+        {
+            vertsOut.push_back(vertsIn[curIdx]);
+        }
+    }
+    return (int)vertsOut.size();
 }
 
 void GShader::calc_tangent(GGraphicLibAPI *GLAPI)
@@ -171,7 +282,9 @@ GColor GShader::SampleTex(std::vector<TGAImage> *mipmaps, GMipmapType mipmapType
         float maxPixelCount = xDirPixelMore ? pixelCount.x() : pixelCount.y();
         float minPixelCount = xDirPixelMore ? pixelCount.y() : pixelCount.x();
         int sampleRatio = maxPixelCount/minPixelCount + 0.5;
+        sampleRatio = min(sampleRatio, 20);
         int lod = std::max(0.0f,log2f(maxPixelCount/sampleRatio));
+        lod = std::min(lod, (int)mipmaps->size()-1);
         TGAImage* curLodImage = &(mipmaps->at(lod));
         vec2f curLodUVStep = vec2f::one / vec2f(curLodImage->get_width(), curLodImage->get_height());
         vec4f texelValue = vec4::zero;

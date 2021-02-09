@@ -6,8 +6,8 @@ using namespace std;
 
 #define PROJ_NAME "GRaster"
 
-int GUtils::screenWidth = 800;
-int GUtils::screenHeight = 800;
+int GUtils::screenWidth = 500;
+int GUtils::screenHeight = 500;
 
 float GUtils::screenAspectRatio()
 {

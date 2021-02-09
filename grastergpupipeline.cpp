@@ -9,7 +9,9 @@
 using namespace std;
 using namespace GMath;
 
-void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs_appdata *> appdataArr, int offset)
+#define F_Epsilon std::numeric_limits<float>::epsilon()
+
+void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs_appdata *>& appdataArr, int offset)
 {
     int onePrimitiveVertCount = 1;
     if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
@@ -21,69 +23,92 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
         onePrimitiveVertCount = 2;
     }
 
+    int subVertCount = onePrimitiveVertCount;
     for(size_t i=offset; i<appdataArr.size(); i=i+onePrimitiveVertCount)
     {
-        vec2 primitiveScreenPos[onePrimitiveVertCount];
         vec4 clipPos[onePrimitiveVertCount];
         for(int j=0; j<onePrimitiveVertCount; j++)
         {
             // vertex process
             auto appdata = appdataArr[i+j];
             clipPos[j] = GLAPI->activeShader->vertex(GLAPI, appdata, j);
-
-            // ndc to viewport
-            vec3 ndc = proj<double,3>(clipPos[j]/clipPos[j].w());
-            primitiveScreenPos[j] = GGameObject::activeCamera->NDCPosToScreenPos(ndc);
         }
-        GLAPI->activeShader->calc_tangent(GLAPI);
-        // raster
-        if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
+
+        // homogenous clipping
+        if(IsInsideFrustumPlane(clipPos[0]) && IsInsideFrustumPlane(clipPos[1]) && IsInsideFrustumPlane(clipPos[2]))
         {
-            // triangle
-            vec3 triangleSurfaceNormal;
-            if(GLAPI->currentFrontFace==GFrontFace::kClockwise)
+            // all inside frustum, so do nothing
+        }
+        else
+        {
+            subVertCount = GLAPI->activeShader->homogenous_clipping(GLAPI);
+            if(subVertCount<onePrimitiveVertCount) continue;
+        }
+
+        vec2 primitiveScreenPos[onePrimitiveVertCount];
+        for(int vertIdxOffset =0; vertIdxOffset<subVertCount; vertIdxOffset=vertIdxOffset+onePrimitiveVertCount)
+        {
+            GLAPI->activeShader->v2f_data_arr.clear();
+            for(int j=0; j<onePrimitiveVertCount; j++)
             {
-                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0],0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0], 0)).inverse();
+                GLAPI->activeShader->v2f_data_arr.push_back(GLAPI->activeShader->v2f_data_arr_tmp[vertIdxOffset+j]);
+                clipPos[j] = GLAPI->activeShader->v2f_data_arr[j].gl_position;
+                // ndc to viewport
+                vec3 ndc = proj<double,3>(clipPos[j]/clipPos[j].w());
+                primitiveScreenPos[j] = GGameObject::activeCamera->NDCPosToScreenPos(ndc);
             }
-            else if(GLAPI->currentFrontFace==GFrontFace::kCounterClockwise)
+
+            // raster
+            if(GLAPI->activePrimitiveType == GPrimitiveType::kTriangles)
             {
-                triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0], 0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0],0));
-            }
-            else
-            {
-                assert(false);
-            }
-            // HSR hide surface remove
-            GCullFaceType curCullFaceType = GLAPI->cullFaceType;
-            if(curCullFaceType==GCullFaceType::kFTShaderSetting)
-            {
-                curCullFaceType = GLAPI->activeShader->cullFaceType;
-            }
-            if(curCullFaceType == GCullFaceType::kFTBack)
-            {
-                if(dot(triangleSurfaceNormal, vec3(0,0, 1))>0)
+                GLAPI->activeShader->calc_tangent(GLAPI);
+
+                // triangle
+                vec3 triangleSurfaceNormal;
+                if(GLAPI->currentFrontFace==GFrontFace::kClockwise)
                 {
-                    continue;
+                    triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0],0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0], 0)).inverse();
                 }
-            }
-            else if(curCullFaceType == GCullFaceType::kFTFront)
-            {
-                if(dot(triangleSurfaceNormal, vec3(0,0,-1))>0)
+                else if(GLAPI->currentFrontFace==GFrontFace::kCounterClockwise)
                 {
-                    continue;
+                    triangleSurfaceNormal = cross(embed<double,3>(primitiveScreenPos[2]-primitiveScreenPos[0], 0), embed<double,3>(primitiveScreenPos[1]-primitiveScreenPos[0],0));
                 }
-            }
-            if(GLAPI->activePolygonMode == GPolygonMode::kPMLine)
-            {
-                RasterLine(primitiveScreenPos[0].x(),primitiveScreenPos[0].y(),primitiveScreenPos[1].x(),primitiveScreenPos[1].y(),GLAPI);
-                RasterLine(primitiveScreenPos[1].x(),primitiveScreenPos[1].y(),primitiveScreenPos[2].x(),primitiveScreenPos[2].y(),GLAPI);
-                RasterLine(primitiveScreenPos[2].x(),primitiveScreenPos[2].y(),primitiveScreenPos[0].x(),primitiveScreenPos[0].y(),GLAPI);
-            }
-            else if(GLAPI->activePolygonMode == GPolygonMode::kPMFill)
-            {
-                // interpolation attribution
-                // invoke pixel shader
-                RasterTriangle(clipPos, primitiveScreenPos, GLAPI);
+                else
+                {
+                    assert(false);
+                }
+                // HSR hide surface remove
+                GCullFaceType curCullFaceType = GLAPI->cullFaceType;
+                if(curCullFaceType==GCullFaceType::kFTShaderSetting)
+                {
+                    curCullFaceType = GLAPI->activeShader->cullFaceType;
+                }
+                if(curCullFaceType == GCullFaceType::kFTBack)
+                {
+                    if(dot(triangleSurfaceNormal, vec3(0,0, 1))>0)
+                    {
+                        continue;
+                    }
+                }
+                else if(curCullFaceType == GCullFaceType::kFTFront)
+                {
+                    if(dot(triangleSurfaceNormal, vec3(0,0,-1))>0)
+                    {
+                        continue;
+                    }
+                }
+                if(GLAPI->activePolygonMode == GPolygonMode::kPMLine)
+                {
+                    RasterLine(primitiveScreenPos[0].x(),primitiveScreenPos[0].y(),primitiveScreenPos[1].x(),primitiveScreenPos[1].y(),GLAPI);
+                    RasterLine(primitiveScreenPos[1].x(),primitiveScreenPos[1].y(),primitiveScreenPos[2].x(),primitiveScreenPos[2].y(),GLAPI);
+                    RasterLine(primitiveScreenPos[2].x(),primitiveScreenPos[2].y(),primitiveScreenPos[0].x(),primitiveScreenPos[0].y(),GLAPI);
+                }
+                else if(GLAPI->activePolygonMode == GPolygonMode::kPMFill)
+                {
+                    // interpolation attribution
+                    // invoke pixel shader
+                    RasterTriangle(clipPos, primitiveScreenPos, GLAPI);
+                }
             }
         }
     }
@@ -309,6 +334,116 @@ void GRasterGPUPipeline::RasterLine(int x0, int y0, int x1, int y1, GGraphicLibA
             error -= xDelta*xStep;
         }
     }
+}
+
+bool GRasterGPUPipeline::IsInsideFrustumPlane(GFrustumPlaneType planeType, vec4 pos)
+{
+    switch (planeType)
+    {
+    case GFrustumPlaneType::kFPTFront:
+        return pos.z() >= -pos.w();
+    case GFrustumPlaneType::kFPTBack:
+        return pos.z() <= pos.w();
+    case GFrustumPlaneType::kFPTLeft:
+        return pos.x() >= -pos.w();
+    case GFrustumPlaneType::kFPTRight:
+        return pos.x() <= pos.w();
+    case GFrustumPlaneType::kFPTBottom:
+        return pos.y() >= -pos.w();
+    case GFrustumPlaneType::kFPTTop:
+        return pos.y() <= pos.w();
+
+    case GFrustumPlaneType::kFPTW:
+        return pos.w() >= F_Epsilon;
+    }
+    assert(false);
+}
+
+bool GRasterGPUPipeline::IsInsideFrustumPlane(vec4 pos)
+{
+    return IsInsideFrustumPlane(GFrustumPlaneType::kFPTFront, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTBack, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTLeft, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTRight, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTBottom, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTTop, pos) &&
+           IsInsideFrustumPlane(GFrustumPlaneType::kFPTW, pos);
+
+}
+
+float GRasterGPUPipeline::CalcIntersectLerpFactor(GFrustumPlaneType planeType, vec4 pos0, vec4 pos1)
+{
+    switch (planeType) 
+    {
+    case GFrustumPlaneType::kFPTFront:
+        return (pos0.w() + pos0.z()) / (pos0.w() + pos0.z() - pos1.w() - pos1.z());
+    case GFrustumPlaneType::kFPTBack:
+        return (pos0.w() - pos0.z()) / (pos0.w() - pos0.z() - pos1.w() + pos1.z());
+
+    case GFrustumPlaneType::kFPTLeft:
+        return (pos0.w() + pos0.x()) / (pos0.w() + pos0.x() - pos1.w() - pos1.x());
+    case GFrustumPlaneType::kFPTRight:
+        return (pos0.w() - pos0.x()) / (pos0.w() - pos0.x() - pos1.w() + pos1.x());
+
+    case GFrustumPlaneType::kFPTBottom:
+        return (pos0.w() + pos0.y()) / (pos0.w() + pos0.y() - pos1.w() - pos1.y());
+    case GFrustumPlaneType::kFPTTop:
+        return (pos0.w() - pos0.y()) / (pos0.w() - pos0.y() - pos1.w() + pos1.y());
+
+    case GFrustumPlaneType::kFPTW:
+        return (pos0.w() - F_Epsilon) / (pos0.w() - pos1.w());
+    }
+    assert(false);
+}
+
+bool GRasterGPUPipeline::ClipVertex(GGraphicLibAPI* GLAPI, int primitiveCount, std::vector<S_abs_appdata *> &vertsIn, std::vector<S_abs_appdata *> &vertsOut)
+{
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTFront, primitiveCount, vertsIn, vertsOut))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTBack, primitiveCount, vertsOut, vertsIn))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTLeft, primitiveCount, vertsIn, vertsOut))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTRight, primitiveCount, vertsOut, vertsIn))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTBottom, primitiveCount, vertsIn, vertsOut))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTTop, primitiveCount, vertsOut, vertsIn))
+    {
+        return false;
+    }
+    if(!ClipVertex(GLAPI, GFrustumPlaneType::kFPTW, primitiveCount, vertsIn, vertsOut))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool GRasterGPUPipeline::ClipVertex(GGraphicLibAPI* GLAPI, GFrustumPlaneType planeType, int primitiveCount, std::vector<S_abs_appdata *> &vertsIn, std::vector<S_abs_appdata *> &vertsOut)
+{
+    vertsOut.clear();
+    for(size_t vertIdx=0; vertIdx<vertsIn.size(); vertIdx++)
+    {
+        size_t preIdx = (vertIdx-1+vertsIn.size()) % vertsIn.size();
+        size_t curIdx = vertIdx;
+
+    }
+
+    if((int)vertsOut.size()<primitiveCount)
+    {
+        return false;
+    }
+    return true;
 }
 
 void GRasterGPUPipeline::__SetColorBufferArrColor(const std::vector<GColorBuffer *> &colorBuffers, int i, int j, GColor color)

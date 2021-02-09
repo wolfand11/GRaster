@@ -105,6 +105,7 @@ struct IShader
 
     virtual ~IShader(){}
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx) = 0;
+    virtual int homogenous_clipping(GGraphicLibAPI* GLAPI) = 0;
     virtual void calc_tangent(GGraphicLibAPI *GLAPI) = 0;
     virtual void fragment(S_abs_v2f& frag_in, S_fout& frag_out, int fragIdx) = 0;
     virtual S_abs_v2f* GetV2f(int idx) = 0;
@@ -131,6 +132,8 @@ struct IShader
 enum GShaderType
 {
     kSTDefault,
+    kSTPBRSpecular,
+    kSTPBRMetallic
 };
 
 struct GLightInfo;
@@ -163,10 +166,14 @@ struct GShader : public IShader
     {
         return &(v2f_data_arr[idx]);
     }
-    S_v2f v2f_data_arr[3];
+    std::vector<S_v2f> v2f_data_arr_tmp;
+    std::vector<S_v2f> v2f_data_arr;
     S_v2f v2f_interpolated[4];
 
     virtual GMath::vec4 vertex(GGraphicLibAPI* GLAPI, S_abs_appdata* vert_in, int vertIdx);
+    virtual int homogenous_clipping(GGraphicLibAPI* GLAPI);
+    int clip_vertex(int primitiveCount);
+    int clip_vertex(GFrustumPlaneType planeType, std::vector<S_v2f>& vertsIn, std::vector<S_v2f>& vertsOut);
     virtual void calc_tangent(GGraphicLibAPI *GLAPI);
     virtual S_abs_v2f* interpolation(GGraphicLibAPI* GLAPI, GMath::vec3 lerpFactor, int fragIdx);
 

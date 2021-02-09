@@ -71,10 +71,15 @@ enum GMipmapType
     kMipmapAnisotropy
 };
 
-
-
-
-
-
+enum GFrustumPlaneType
+{
+    kFPTFront,
+    kFPTBack,
+    kFPTLeft,
+    kFPTRight,
+    kFPTBottom,
+    kFPTTop,
+    kFPTW,
+};
 
 #endif // GGRAPHICLIBDEFINE_H

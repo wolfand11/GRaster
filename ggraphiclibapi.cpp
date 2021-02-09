@@ -1,6 +1,7 @@
 #include "ggraphiclibapi.h"
 #include "grastergpupipeline.h"
 #include "gmath.h"
+#include "gutils.h"
 using namespace std;
 using namespace GMath;
 
@@ -247,6 +248,7 @@ void GGraphicLibAPI::DrawArrays(GPrimitiveType t, int vertexOffsetCount, int ver
     ParseVertexData(vertexCount, slotVertexAttribArr_Arr);
     CreateAppData(appdataArr, slotVertexAttribArr_Arr);
     GRasterGPUPipeline::ProcessAppData(this, appdataArr, vertexOffsetCount);
+    GUtils::ReleaseVector(appdataArr);
 }
 
 void GGraphicLibAPI::DrawElements(GPrimitiveType t, int vertCount, GDatumType indexType, int offsetBytes)
@@ -265,6 +267,7 @@ void GGraphicLibAPI::DrawElements(GPrimitiveType t, int vertCount, GDatumType in
     ParseElemData(vertCount, indexType, elemIndexArr, offsetBytes);
     CreateAppData(appdataArr, slotVertexAttribArr_Arr, &elemIndexArr);
     GRasterGPUPipeline::ProcessAppData(this, appdataArr, 0);
+    GUtils::ReleaseVector(appdataArr);
 }
 
 void GGraphicLibAPI::SetPolygonMode(GPolygonMode mode)
