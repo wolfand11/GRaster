@@ -26,7 +26,8 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
     int subVertCount = onePrimitiveVertCount;
     for(size_t i=offset; i<appdataArr.size(); i=i+onePrimitiveVertCount)
     {
-        vec4 clipPos[onePrimitiveVertCount];
+        vector<vec4> clipPos(onePrimitiveVertCount);
+        //vec4 clipPos[onePrimitiveVertCount];
         for(int j=0; j<onePrimitiveVertCount; j++)
         {
             // vertex process
@@ -45,7 +46,8 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
             if(subVertCount<onePrimitiveVertCount) continue;
         }
 
-        vec2 primitiveScreenPos[onePrimitiveVertCount];
+        vector<vec2> primitiveScreenPos(onePrimitiveVertCount);
+        //vec2 primitiveScreenPos[onePrimitiveVertCount];
         for(int vertIdxOffset =0; vertIdxOffset<subVertCount; vertIdxOffset=vertIdxOffset+onePrimitiveVertCount)
         {
             GLAPI->activeShader->v2f_data_arr.clear();
@@ -114,7 +116,7 @@ void GRasterGPUPipeline::ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs
     }
 }
 
-void GRasterGPUPipeline::RasterTriangle(vec4* vertsClipPos, vec2* vertsScreenPos, GGraphicLibAPI *GLAPI)
+void GRasterGPUPipeline::RasterTriangle(vector<vec4>& vertsClipPos, vector<vec2>& vertsScreenPos, GGraphicLibAPI *GLAPI)
 {
     int debugPosX = 550;
     int debugPosY = 202;

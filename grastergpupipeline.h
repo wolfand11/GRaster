@@ -11,7 +11,7 @@ class GRasterGPUPipeline
 {
 public:
     static void ProcessAppData(GGraphicLibAPI* GLAPI, std::vector<S_abs_appdata*>& appdataArr, int offset);
-    static void RasterTriangle(GMath::vec4* vertsClipPos, GMath::vec2* vertsScreenPos, GGraphicLibAPI* GLAPI);
+    static void RasterTriangle(std::vector<GMath::vec4>& vertsClipPos, std::vector<GMath::vec2>& vertsScreenPos, GGraphicLibAPI* GLAPI);
     static bool ZDepthTest(GGraphicLibAPI *GLAPI, GMath::vec2i* fragScreenPos, S_abs_v2f* interpolationData[4], bool* fragNeedRendering, int fragIdx);
     static void RasterLine(int x0, int y0, int x1, int y1, GGraphicLibAPI* GLAPI);
 
