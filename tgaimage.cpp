@@ -16,7 +16,8 @@ bool TGAImage::read_tga_file(const std::string filename) {
         return false;
     }
     TGA_Header header;
-    in.read(reinterpret_cast<char *>(&header), sizeof(header));
+    auto headerSize = sizeof(header);
+    in.read(reinterpret_cast<char *>(&header), headerSize);
     if (!in.good()) {
         in.close();
         std::cerr << "an error occured while reading the header\n";
