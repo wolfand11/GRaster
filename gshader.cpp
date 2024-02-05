@@ -184,13 +184,15 @@ void GShader::calc_tangent(GGraphicLibAPI *GLAPI)
 {
     if(GLAPI->activePrimitiveType==GPrimitiveType::kTriangles)
     {
-        // tangent-xAxis normal-yAxis binormal-zAxis
-        //vec3 tangent = embed<double,3>(v2f_data_arr[2].uv - v2f_data_arr[0].uv, 0);
-        vec3 binormal = embed<double,3>(v2f_data_arr[1].uv - v2f_data_arr[0].uv, 0);
+        // tangent-xAxis normal-yAxis binormal-zAxis. the binormals below are all OK.
+        //vec3 binormal = embed<double,3>(v2f_data_arr[1].uv - v2f_data_arr[0].uv, 0);
+        //vec3 binormal = embed<double,3>(v2f_data_arr[2].uv - v2f_data_arr[0].uv, 0);
+        vec3 binormal = vec3(v2f_data_arr[2].uv.x()-v2f_data_arr[0].uv.x(), 0, v2f_data_arr[2].uv.y()-v2f_data_arr[0].uv.y());
         for(int vertIdx=0; vertIdx<3; vertIdx++)
         {
             vec3 normal = v2f_data_arr[vertIdx].normal;
             vec3 tmpTangent = cross(normal, binormal);
+            v2f_data_arr[vertIdx].tangent = tmpTangent;
             v2f_data_arr[vertIdx].wNormal = (mat3)(world2Obj.get_minor(3,3).transpose()) * normal;
             v2f_data_arr[vertIdx].wTangent = (mat3)(obj2World.get_minor(3,3)) * tmpTangent;
         }
@@ -232,7 +234,9 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out, int fragIdx)
     double alpha = diffColor.w();
     float NoL = 0;
     float HoN = 0;
-    vec3 wBinormal = cross(v2f.wNormal, v2f.wTangent);
+    // don't normalize the wTangent!
+    //v2f.wTangent.normalize();
+    vec3 wBinormal = cross(v2f.wTangent, v2f.wNormal); //cross(v2f.wNormal, v2f.wTangent);
     vec3 tNormal = proj<float,3>(GColor::ToFloat01Color(SampleTex(normalmaps_, norm_mipmaptype, v2f.uv,fragIdx, GColor::normal)));
     tNormal = (tNormal*2) - vec3::one;
     vec3 wNormal = tNormal.x() * v2f.wTangent + tNormal.y() * wBinormal + tNormal.z() * v2f.wNormal;
@@ -251,6 +255,10 @@ void GShader::fragment(S_abs_v2f& frag_in, S_fout &frag_out, int fragIdx)
         vec4 lightColor = GColor::ToFloat01Color(light->lightColor) * light->lightIntensity;
         col = (diffColor * lightColor) * NoL + lightColor * std::pow(HoN, 50);
     }
+    // debug world tangent
+    //col.SetXYZ((v2f.wTangent+vec3::one)*0.5f);
+    // debug world normal
+    //col.SetXYZ((wNormal+vec3::one)*0.5f);
 
     col.SetW(alpha);
     frag_out.colors.push_back(col);

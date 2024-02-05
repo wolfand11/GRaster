@@ -89,7 +89,8 @@ struct S_v2f : public S_abs_v2f
     GMath::vec3 wNormal;
     GMath::vec3 wTangent;
     GMath::vec2 uv;
-    GMath::vec3 normal;
+    GMath::vec3 normal;  // tangent space
+    GMath::vec3 tangent; // tangent space
 };
 
 struct S_fout
